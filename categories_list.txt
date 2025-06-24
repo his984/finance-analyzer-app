@@ -1,0 +1,15 @@
+Charity
+Fun&Kids
+Entertainment
+Food & Groceries
+Healthcare
+Housing_Expense
+Monthly_Bills
+Other
+Personal
+Savings
+SERVICE
+Subscription
+Tec&Electronics
+Transport
+Travel
