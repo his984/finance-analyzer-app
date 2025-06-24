@@ -33,3 +33,27 @@ def load_categories():
     except FileNotFoundError:
         # If file not found, return an empty list.
         return []
+        
+def calculate_category_summary(dataframe):
+    """
+    Calculates the sum of 'Amount' for each 'Category'.
+    
+    Args:
+        dataframe (pd.DataFrame): The dataframe to analyze.
+
+    Returns:
+        pd.DataFrame: A new dataframe with 'Category' and summed 'Amount'.
+    """
+    if dataframe is None or 'Category' not in dataframe.columns or dataframe['Category'].eq('').all():
+        return pd.DataFrame(columns=['Category', 'Total Amount'])
+
+    # Group by 'Category', calculate the sum of 'Amount' for each, and reset index to make it a dataframe
+    summary = dataframe.groupby('Category')['Amount'].sum().reset_index()
+    
+    # Sort by amount
+    summary = summary.sort_values(by='Amount', ascending=True)
+    
+    # Rename columns for clarity
+    summary.columns = ['Category', 'Total Amount']
+    
+    return summary
