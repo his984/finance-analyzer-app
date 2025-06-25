@@ -194,3 +194,6 @@ cython_debug/
 .cursorindexingignore
 
 .md
+
+# Ignore all .exe files
+*.exe

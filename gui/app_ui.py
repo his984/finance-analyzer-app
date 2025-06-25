@@ -350,6 +350,23 @@ class App(ctk.CTk):
                 title="Error", message=f"Failed to export file:\n{e}", icon="cancel"
             )
 
+    def export_keywords(self) -> None:
+        """Export the content of keywords.json to a user-specified location."""
+        try:
+            keywords = self.controller.keywords_map
+            filepath = filedialog.asksaveasfilename(
+                defaultextension=".json",
+                filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
+                title="Export Keywords As...",
+            )
+            if not filepath:
+                return
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(keywords, f, indent=4, ensure_ascii=False)
+            CTkMessagebox(title="Success", message=f"Keywords exported to:\n{filepath}")
+        except Exception as e:
+            CTkMessagebox(title="Error", message=f"Failed to export keywords:\n{e}", icon="cancel")
+
 
 if __name__ == "__main__":
     app = App()

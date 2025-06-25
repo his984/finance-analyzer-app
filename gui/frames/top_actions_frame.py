@@ -40,7 +40,22 @@ class TopActionsFrame(ctk.CTkFrame):
         self.export_button = ctk.CTkButton(
             self.button_row, text="Export Excel", command=lambda: self.controller.export_to_excel(), state="disabled", **button_style
         )
-        self.export_button.pack(side="left", padx=(4, 0), pady=10)
+        self.export_button.pack(side="left", padx=4, pady=10)
+
+        # New export keywords button (distinct blue color)
+        self.export_keywords_button = ctk.CTkButton(
+            self.button_row,
+            text="Export Keywords",
+            fg_color="#2980B9",
+            hover_color="#3498DB",
+            text_color="white",
+            command=lambda: master.export_keywords(),
+            height=36,
+            width=160,
+            corner_radius=8,
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        self.export_keywords_button.pack(side="left", padx=(4, 0), pady=10)
 
         # Red close button with 'X' icon at the far right
         self.close_button = ctk.CTkButton(
