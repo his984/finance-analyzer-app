@@ -1,13 +1,13 @@
 import customtkinter as ctk
 from tkinter import filedialog, ttk
 import pandas as pd
-import json
-import math
 from CTkMessagebox import CTkMessagebox
 
 from core.data_processor import load_keywords, save_keywords, load_categories
 from .frames.top_actions_frame import TopActionsFrame
-from .frames.filter_frame import FilterFrame  # <-- NEW IMPORT
+from .frames.filter_frame import FilterFrame
+from .frames.table_frame import TableFrame  # <-- NEW IMPORT
+from .frames.bottom_frame import BottomFrame
 
 
 class App(ctk.CTk):
@@ -33,108 +33,26 @@ class App(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
 
-        # --- Top Action Frame ---
+        # Create Frame instances from their own classes
         self.top_frame = TopActionsFrame(self, controller=self)
         self.top_frame.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
 
-        # --- REFACTORED: Filter & Search Frame ---
         self.filter_frame = FilterFrame(self, controller=self)
         self.filter_frame.grid(row=1, column=0, padx=20, pady=0, sticky="ew")
 
-        # --- Main Data Table Frame (No changes) ---
-        self.table_frame = ctk.CTkFrame(self)
+        # The table frame is now its own class
+        self.table_frame = TableFrame(self)
         self.table_frame.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
-        self.table_frame.grid_rowconfigure(0, weight=1)
-        self.table_frame.grid_columnconfigure(0, weight=1)
-
-        style = ttk.Style()
-        style.theme_use("default")
-        style.configure(
-            "Treeview",
-            background="#2a2d2e",
-            foreground="white",
-            fieldbackground="#2a2d2e",
-            borderwidth=0,
-            rowheight=25,
-        )
-        style.map("Treeview", background=[("selected", "#22559b")])
-        style.configure(
-            "Treeview.Heading",
-            background="#565B5E",
-            foreground="white",
-            relief="flat",
-            font=("Calibri", 10, "bold"),
-        )
-        style.map("Treeview.Heading", background=[("active", "#3484F0")])
-        self.tree = ttk.Treeview(self.table_frame, show="headings")
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        self.tree.tag_configure("oddrow", background="#343638")
-        self.tree.tag_configure("evenrow", background="#2a2d2e")
-        scrollbar = ctk.CTkScrollbar(self.table_frame, command=self.tree.yview)
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        # Get a direct reference to the tree widget itself
+        self.tree = self.table_frame.tree
         self.tree.bind(
             "<<TreeviewSelect>>", lambda event: self.table_row_selected(event)
         )
 
-        # --- Bottom Control & Summary Frame (No changes) ---
-        self.bottom_frame = ctk.CTkFrame(self)
+        self.bottom_frame = BottomFrame(self, controller=self)
         self.bottom_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
-        self.bottom_frame.grid_columnconfigure(1, weight=1)
-        self.control_frame = ctk.CTkFrame(self.bottom_frame, fg_color="transparent")
-        self.control_frame.grid(row=0, column=0, sticky="w")
-        ctk.CTkLabel(self.control_frame, text="Edit Selected:").pack(
-            side="left", padx=(10, 5)
-        )
-        self.category_edit_box = ctk.CTkComboBox(
-            self.control_frame, values=self.categories_for_edit, state="disabled"
-        )
-        self.category_edit_box.pack(side="left", padx=5)
-        self.update_button = ctk.CTkButton(
-            self.control_frame,
-            text="Update",
-            command=lambda: self.update_row_category(),
-            state="disabled",
-        )
-        self.update_button.pack(side="left", padx=5)
-        self.delete_button = ctk.CTkButton(
-            self.control_frame,
-            text="Delete",
-            command=lambda: self.delete_selected_row(),
-            state="disabled",
-            fg_color="#C0392B",
-            hover_color="#E74C3C",
-        )
-        self.delete_button.pack(side="left", padx=5)
-        self.overall_summary_frame = ctk.CTkFrame(
-            self.bottom_frame, fg_color="transparent"
-        )
-        self.overall_summary_frame.grid(row=0, column=1, sticky="e")
-        font_summary = ctk.CTkFont(size=16, weight="bold")
-        self.income_label = ctk.CTkLabel(
-            self.overall_summary_frame,
-            text="Income: -",
-            font=font_summary,
-            text_color="#27AE60",
-        )
-        self.income_label.pack(side="left", padx=10)
-        self.expense_label = ctk.CTkLabel(
-            self.overall_summary_frame,
-            text="Expenses: -",
-            font=font_summary,
-            text_color="#C0392B",
-        )
-        self.expense_label.pack(side="left", padx=10)
-        self.net_label = ctk.CTkLabel(
-            self.overall_summary_frame, text="Net: -", font=font_summary
-        )
-        self.net_label.pack(side="left", padx=10)
 
         self.populate_treeview(None)
-
-    # --- METHODS ---
-    # Methods now need to reference widgets via their parent frame
-    # e.g., self.filter_frame.search_entry.get()
 
     def populate_treeview(self, dataframe):
         self.tree.delete(*self.tree.get_children())
@@ -147,6 +65,7 @@ class App(ctk.CTk):
             return
         self.tree["columns"] = dataframe.columns.tolist()
         for col in dataframe.columns:
+            # Bind the sort command to the main App method
             self.tree.heading(
                 col, text=col, command=lambda c=col: self.sort_table(c), anchor="center"
             )
@@ -156,25 +75,26 @@ class App(ctk.CTk):
             self.tree.insert("", "end", iid=index, values=row.tolist(), tags=(tag,))
 
     def calculate_and_display_summaries(self, dataframe):
+        # Access labels through the bottom_frame instance
         if dataframe is None or "Amount" not in dataframe.columns:
-            self.income_label.configure(text="Income: -")
-            self.expense_label.configure(text="Expenses: -")
-            self.net_label.configure(text="Net: -")
+            self.bottom_frame.income_label.configure(text="Income: -")
+            self.bottom_frame.expense_label.configure(text="Expenses: -")
+            self.bottom_frame.net_label.configure(text="Net: -")
             return
         amounts = pd.to_numeric(dataframe["Amount"], errors="coerce").fillna(0)
         total_income = amounts[amounts > 0].sum()
         total_expenses = amounts[amounts < 0].sum()
         net_balance = amounts.sum()
-        self.income_label.configure(text=f"Income: {total_income:,.2f}")
-        self.expense_label.configure(text=f"Expenses: {total_expenses:,.2f}")
-        self.net_label.configure(text=f"Net: {net_balance:,.2f}")
+        self.bottom_frame.income_label.configure(text=f"Income: {total_income:,.2f}")
+        self.bottom_frame.expense_label.configure(
+            text=f"Expenses: {total_expenses:,.2f}"
+        )
+        self.bottom_frame.net_label.configure(text=f"Net: {net_balance:,.2f}")
 
     def apply_filters(self, event=None):
         if self.selected_df is None:
             return
         df_to_display = self.selected_df
-
-        # Use self.filter_frame to access the widgets
         selected_category = self.filter_frame.category_filter_box.get()
         if selected_category == "Uncategorized":
             df_to_display = df_to_display[df_to_display["Category"] == ""]
@@ -182,7 +102,6 @@ class App(ctk.CTk):
             df_to_display = df_to_display[
                 df_to_display["Category"] == selected_category
             ]
-
         search_term = self.filter_frame.search_entry.get()
         if search_term:
             df_to_display = df_to_display[
@@ -249,7 +168,6 @@ class App(ctk.CTk):
         self.top_frame.export_button.configure(state="normal")
         self.clear_filters(reset_ui_controls=False)
         self.apply_filters()
-
         uncategorized_count = self.selected_df["Category"].eq("").sum()
         if uncategorized_count == 0:
             CTkMessagebox(
@@ -271,7 +189,6 @@ class App(ctk.CTk):
             self.sort_ascending = not self.sort_ascending
         else:
             self.sort_ascending = True
-
         self.sort_column = column_name
         self.selected_df = self.selected_df.sort_values(
             by=column_name, ascending=self.sort_ascending
@@ -289,10 +206,12 @@ class App(ctk.CTk):
             index_type = self.selected_df.index.dtype.type
             self.currently_selected_row_index = index_type(selected_iid_str)
             item_data = self.selected_df.loc[self.currently_selected_row_index]
-            self.category_edit_box.configure(state="readonly")
-            self.category_edit_box.set(item_data["Category"] or "Select Category")
-            self.update_button.configure(state="normal")
-            self.delete_button.configure(state="normal")
+            self.bottom_frame.category_edit_box.configure(state="readonly")
+            self.bottom_frame.category_edit_box.set(
+                item_data["Category"] or "Select Category"
+            )
+            self.bottom_frame.update_button.configure(state="normal")
+            self.bottom_frame.delete_button.configure(state="normal")
         except (KeyError, ValueError) as e:
             print(f"Error selecting row: {e}")
             self.reset_control_panel()
@@ -300,21 +219,17 @@ class App(ctk.CTk):
     def update_row_category(self):
         if self.currently_selected_row_index is None:
             return
-        chosen_category = self.category_edit_box.get()
+        chosen_category = self.bottom_frame.category_edit_box.get()
         if not chosen_category or chosen_category == "Select Category":
             return
-
         item_description = self.selected_df.loc[
             self.currently_selected_row_index, "Description"
         ]
-
         self.selected_df.loc[self.currently_selected_row_index, "Category"] = (
             chosen_category
         )
         self.keywords_map[item_description] = chosen_category
-
         self.apply_filters()
-        self.calculate_and_display_summaries(self.selected_df)
         self.reset_control_panel()
 
     def delete_selected_row(self):
@@ -344,16 +259,15 @@ class App(ctk.CTk):
         )
 
     def reset_control_panel(self):
-        self.update_button.configure(state="disabled")
-        self.delete_button.configure(state="disabled")
-        self.category_edit_box.set("")
-        self.category_edit_box.configure(state="disabled")
+        self.bottom_frame.update_button.configure(state="disabled")
+        self.bottom_frame.delete_button.configure(state="disabled")
+        self.bottom_frame.category_edit_box.set("")
+        self.bottom_frame.category_edit_box.configure(state="disabled")
         self.currently_selected_row_index = None
 
     def export_to_excel(self):
         if self.selected_df is None:
             return
-        # Logic to get currently displayed data for export
         df_to_export = self.selected_df
         selected_category = self.filter_frame.category_filter_box.get()
         if selected_category == "Uncategorized":
@@ -367,7 +281,6 @@ class App(ctk.CTk):
                     search_term, case=False, na=False
                 )
             ]
-
         if df_to_export.empty:
             CTkMessagebox(
                 title="Warning",
@@ -375,7 +288,6 @@ class App(ctk.CTk):
                 icon="warning",
             )
             return
-
         try:
             filepath = filedialog.asksaveasfilename(
                 defaultextension=".xlsx",
