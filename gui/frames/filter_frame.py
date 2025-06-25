@@ -1,8 +1,12 @@
 # new file: gui/frames/filter_frame.py
 import customtkinter as ctk
+from config.constants import CATEGORY_ALL, CATEGORY_UNCATEGORIZED
 
 
 class FilterFrame(ctk.CTkFrame):
+    """
+    Frame for filtering data by category, search, and value.
+    """
     def __init__(self, master, controller):
         super().__init__(master)
 
@@ -16,7 +20,7 @@ class FilterFrame(ctk.CTkFrame):
         )
         self.category_filter_box = ctk.CTkComboBox(
             self,
-            values=self.controller.categories_for_filter,
+            values=[CATEGORY_ALL, CATEGORY_UNCATEGORIZED] + self.controller.get_categories(),
             command=lambda value: self.controller.apply_filters(),
             state="disabled",
         )

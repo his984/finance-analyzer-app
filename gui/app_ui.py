@@ -11,31 +11,28 @@ from core.data_processor import (
     load_categories,
     get_category_summary,
 )
+from core.data_utils import filter_dataframe, sort_dataframe, prepare_export, calculate_summaries
 from .frames.top_actions_frame import TopActionsFrame
 from .frames.filter_frame import FilterFrame
 from .frames.table_frame import TableFrame
 from .frames.bottom_frame import BottomFrame
 from .frames.summary_chart_frame import SummaryChartFrame
+from core.controller import Controller
+from config.constants import APP_TITLE, DEFAULT_GEOMETRY, COLOR_INCOME, COLOR_EXPENSE
 
 
 class App(ctk.CTk):
-    def __init__(self):
+    """
+    Main application window for the Finance Analyzer.
+    """
+    def __init__(self) -> None:
         super().__init__()
-        self.title("Finance Analyzer")
-        self.geometry("1600x900")
+        self.title(APP_TITLE)
+        self.geometry(DEFAULT_GEOMETRY)
 
-        # Data Storage & State
-        self.df = None
-        self.selected_df = None
-        self.keywords_map = load_keywords()
-        self.categories_for_filter = [
-            "All Categories",
-            "Uncategorized",
-        ] + load_categories()
-        self.categories_for_edit = load_categories()
-        self.currently_selected_row_index = None
-        self.sort_column = None
-        self.sort_ascending = True
+        self.controller = Controller()
+        self.sort_column: str | None = None
+        self.sort_ascending: bool = True
 
         # UI Structure
         self.grid_columnconfigure(0, weight=1)
@@ -45,7 +42,7 @@ class App(ctk.CTk):
         self.top_frame = TopActionsFrame(self, controller=self)
         self.top_frame.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
 
-        self.filter_frame = FilterFrame(self, controller=self)
+        self.filter_frame = FilterFrame(self, controller=self.controller)
         self.filter_frame.grid(row=1, column=0, padx=20, pady=0, sticky="ew")
 
         self.content_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -70,18 +67,15 @@ class App(ctk.CTk):
         self.summary_chart_frame.grid(row=1, column=1, sticky="nsew", pady=(10, 0))
         self.content_frame.grid_rowconfigure(1, weight=1)
 
-        self.bottom_frame = BottomFrame(self, controller=self)
+        self.bottom_frame = BottomFrame(self, controller=self.controller)
         self.bottom_frame.grid(row=3, column=0, padx=20, pady=(0, 10), sticky="ew")
 
         # Initial population
         self.populate_treeview(self.tree, None)
         self.populate_treeview(self.summary_tree, None)
 
-    def populate_treeview(self, tree, dataframe, is_interactive=False):
-        """
-        A robust method to populate a treeview. It clears the tree,
-        sets columns, and inserts data. It conditionally adds sort commands.
-        """
+    def populate_treeview(self, tree, dataframe: pd.DataFrame | None, is_interactive: bool = False) -> None:
+        """Populate a treeview with the given DataFrame."""
         # Clear previous contents and columns
         tree.delete(*tree.get_children())
         tree["columns"] = ()
@@ -113,71 +107,37 @@ class App(ctk.CTk):
             iid = index if is_interactive else i
             tree.insert("", "end", iid=iid, values=row.tolist(), tags=(tag,))
 
-    def apply_filters(self, event=None):
-        if self.selected_df is None:
+    def apply_filters(self, event=None) -> None:
+        """Apply all filters and update the UI accordingly."""
+        if self.controller.selected_df is None:
             return
-
-        df_to_display = self.selected_df
         selected_category = self.filter_frame.category_filter_box.get()
-        if selected_category == "Uncategorized":
-            df_to_display = df_to_display[df_to_display["Category"] == ""]
-        elif selected_category != "All Categories":
-            df_to_display = df_to_display[
-                df_to_display["Category"] == selected_category
-            ]
-
         search_term = self.filter_frame.search_entry.get()
-        if search_term:
-            df_to_display = df_to_display[
-                df_to_display["Description"].str.contains(
-                    search_term, case=False, na=False
-                )
-            ]
-
-        # Value filter logic
         value_filter = self.filter_frame.value_filter_box.get()
-        if value_filter == "Positive":
-            df_to_display = df_to_display[pd.to_numeric(df_to_display["Amount"], errors="coerce") > 0]
-        elif value_filter == "Negative":
-            df_to_display = df_to_display[pd.to_numeric(df_to_display["Amount"], errors="coerce") < 0]
-
-        summary_df = get_category_summary(df_to_display)
+        df_to_display = self.controller.filter_data(selected_category, search_term, value_filter)
+        summary_df = self.controller.get_summary(df_to_display)
         self.populate_treeview(self.tree, df_to_display, is_interactive=True)
-        self.populate_treeview(
-            self.summary_tree, summary_df, is_interactive=False
-        )
+        self.populate_treeview(self.summary_tree, summary_df, is_interactive=False)
         self.summary_chart_frame.update_chart(summary_df)
         self.calculate_and_display_summaries(df_to_display)
         self.reset_control_panel()
 
-    def calculate_and_display_summaries(self, dataframe):
-        if dataframe is None or "Amount" not in dataframe.columns:
-            self.bottom_frame.income_label.configure(text="Income: -")
-            self.bottom_frame.expense_label.configure(text="Expenses: -")
-            self.bottom_frame.net_label.configure(text="Net: -")
-            return
-        amounts = pd.to_numeric(dataframe["Amount"], errors="coerce").fillna(0)
-        total_income = amounts[amounts > 0].sum()
-        total_expenses = amounts[amounts < 0].sum()
-        net_balance = amounts.sum()
-        self.bottom_frame.income_label.configure(text=f"Income: {total_income:,.2f}")
-        self.bottom_frame.expense_label.configure(
-            text=f"Expenses: {total_expenses:,.2f}"
-        )
-        self.bottom_frame.net_label.configure(text=f"Net: {net_balance:,.2f}")
+    def calculate_and_display_summaries(self, dataframe: pd.DataFrame | None) -> None:
+        """Calculate and display income, expenses, and net balance."""
+        income, expenses, net = self.controller.calculate_summaries(dataframe)
+        self.bottom_frame.income_label.configure(text=f"Income: {income:,.2f}", text_color=COLOR_INCOME)
+        self.bottom_frame.expense_label.configure(text=f"Expenses: {expenses:,.2f}", text_color=COLOR_EXPENSE)
+        self.bottom_frame.net_label.configure(text=f"Net: {net:,.2f}")
 
-    def load_file(self):
-        """Loads the Excel file, displays its raw content, and enables the Analyze button."""
+    def load_file(self) -> None:
+        """Load an Excel file and initialize the data."""
         filepath = filedialog.askopenfilename(filetypes=(("Excel Files", "*.xlsx"),))
         if not filepath:
             return
 
         try:
-            self.df = pd.read_excel(filepath, skiprows=7)
-            self.selected_df = self.df.copy()
-
-            # --- CRITICAL CHANGE: Only display raw data. Do NOT call any filter/summary functions ---
-            self.populate_treeview(self.tree, self.selected_df, is_interactive=False)
+            self.controller.load_data(filepath)
+            self.populate_treeview(self.tree, self.controller.selected_df, is_interactive=False)
             self.populate_treeview(self.summary_tree, None)
 
             # --- CRITICAL CHANGE: Only enable the Analyze button ---
@@ -201,22 +161,22 @@ class App(ctk.CTk):
                 title="Error", message=f"Failed to load file:\n{e}", icon="cancel"
             )
 
-    def analyze_data(self):
-        """Analyzes data, then sets the filter to 'All Categories' and refreshes the view."""
-        if self.selected_df is None:
+    def analyze_data(self) -> None:
+        """Analyze the loaded data and categorize transactions."""
+        if self.controller.selected_df is None:
             return
 
         # --- Analysis Logic (Stays the same) ---
         columns_to_show = ["Accounting date", "Description", "Amount", "Category"]
-        self.selected_df["Category"] = ""
-        self.selected_df = self.selected_df.reindex(
+        self.controller.selected_df["Category"] = ""
+        self.controller.selected_df = self.controller.selected_df.reindex(
             columns=columns_to_show, fill_value=""
         )
-        for keyword, category in self.keywords_map.items():
-            mask = self.selected_df["Description"].str.contains(
+        for keyword, category in self.controller.keywords_map.items():
+            mask = self.controller.selected_df["Description"].str.contains(
                 keyword, case=False, na=False
             )
-            self.selected_df.loc[mask, "Category"] = category
+            self.controller.selected_df.loc[mask, "Category"] = category
 
         # --- Enable Controls ---
         self.tree.bind(
@@ -236,7 +196,7 @@ class App(ctk.CTk):
         self.apply_filters()  # Now this will use the correct default filter
 
         # --- Display completion message (Stays the same) ---
-        uncategorized_count = self.selected_df["Category"].eq("").sum()
+        uncategorized_count = self.controller.selected_df["Category"].eq("").sum()
         if uncategorized_count == 0:
             CTkMessagebox(
                 title="Analysis Complete",
@@ -250,7 +210,8 @@ class App(ctk.CTk):
                 icon="info",
             )
 
-    def clear_filters(self, reset_ui_controls=False):
+    def clear_filters(self, reset_ui_controls: bool = False) -> None:
+        """Clear all filters and reset the UI."""
         if reset_ui_controls:
             self.top_frame.save_button.configure(state="disabled")
             self.top_frame.export_button.configure(state="disabled")
@@ -268,32 +229,32 @@ class App(ctk.CTk):
         self.filter_frame.search_entry.delete(0, "end")
         self.filter_frame.category_filter_box.set("All Categories")
         self.filter_frame.value_filter_box.set("All")
-        if self.selected_df is not None:
+        if self.controller.selected_df is not None:
             self.apply_filters()
         self.reset_control_panel()
 
-    def sort_table(self, column_name):
-        if self.selected_df is None:
+    def sort_table(self, column_name: str) -> None:
+        """Sort the table by the given column."""
+        if self.controller.selected_df is None:
             return
         if self.sort_column == column_name:
             self.sort_ascending = not self.sort_ascending
         else:
             self.sort_ascending = True
         self.sort_column = column_name
-        self.selected_df = self.selected_df.sort_values(
-            by=column_name, ascending=self.sort_ascending
-        )
+        self.controller.sort_data(column_name, ascending=self.sort_ascending)
         self.apply_filters()
 
-    def table_row_selected(self, event):
+    def table_row_selected(self, event) -> None:
+        """Handle row selection in the table."""
         selected_items = self.tree.selection()
         if not selected_items:
             return
         selected_iid_str = selected_items[0]
         try:
-            index_type = self.selected_df.index.dtype.type
-            self.currently_selected_row_index = index_type(selected_iid_str)
-            item_data = self.selected_df.loc[self.currently_selected_row_index]
+            index_type = self.controller.selected_df.index.dtype.type
+            self.controller.currently_selected_row_index = index_type(selected_iid_str)
+            item_data = self.controller.selected_df.loc[self.controller.currently_selected_row_index]
             self.bottom_frame.category_edit_box.configure(state="readonly")
             self.bottom_frame.category_edit_box.set(
                 item_data["Category"] or "Select Category"
@@ -304,24 +265,26 @@ class App(ctk.CTk):
             print(f"Error selecting row: {e}")
             self.reset_control_panel()
 
-    def update_row_category(self):
-        if self.currently_selected_row_index is None:
+    def update_row_category(self) -> None:
+        """Update the category of the selected row."""
+        if self.controller.currently_selected_row_index is None:
             return
         chosen_category = self.bottom_frame.category_edit_box.get()
         if not chosen_category or chosen_category == "Select Category":
             return
-        item_description = self.selected_df.loc[
-            self.currently_selected_row_index, "Description"
+        item_description = self.controller.selected_df.loc[
+            self.controller.currently_selected_row_index, "Description"
         ]
-        self.selected_df.loc[self.currently_selected_row_index, "Category"] = (
+        self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Category"] = (
             chosen_category
         )
-        self.keywords_map[item_description] = chosen_category
+        self.controller.keywords_map[item_description] = chosen_category
         self.apply_filters()
         self.reset_control_panel()
 
-    def delete_selected_row(self):
-        if self.currently_selected_row_index is None:
+    def delete_selected_row(self) -> None:
+        """Delete the selected row from the data."""
+        if self.controller.currently_selected_row_index is None:
             return
         msg = CTkMessagebox(
             title="Confirm Deletion",
@@ -332,7 +295,7 @@ class App(ctk.CTk):
         )
         if msg.get() == "Delete":
             try:
-                self.selected_df.drop(self.currently_selected_row_index, inplace=True)
+                self.controller.selected_df.drop(self.controller.currently_selected_row_index, inplace=True)
                 self.apply_filters()
                 self.reset_control_panel()
             except KeyError:
@@ -340,37 +303,29 @@ class App(ctk.CTk):
                     title="Error", message="Could not delete the row.", icon="cancel"
                 )
 
-    def save_learned_keywords(self):
-        save_keywords(self.keywords_map)
+    def save_learned_keywords(self) -> None:
+        """Save the learned keywords to the config."""
+        self.controller.update_keywords(self.controller.keywords_map)
         CTkMessagebox(
             title="Saved", message="Learned keywords have been saved successfully."
         )
 
-    def reset_control_panel(self):
+    def reset_control_panel(self) -> None:
+        """Reset the control panel to its default state."""
         self.bottom_frame.update_button.configure(state="disabled")
         self.bottom_frame.delete_button.configure(state="disabled")
         self.bottom_frame.category_edit_box.set("")
         self.bottom_frame.category_edit_box.configure(state="disabled")
-        self.currently_selected_row_index = None
+        self.controller.currently_selected_row_index = None
 
-    def export_to_excel(self):
-        if self.selected_df is None:
+    def export_to_excel(self) -> None:
+        """Export the currently displayed data to an Excel file."""
+        if self.controller.selected_df is None:
             return
-        # Logic to get currently displayed data for export
-        df_to_export = self.selected_df.copy()  # Start with a copy
         selected_category = self.filter_frame.category_filter_box.get()
-        if selected_category == "Uncategorized":
-            df_to_export = df_to_export[df_to_export["Category"] == ""]
-        elif selected_category != "All Categories":
-            df_to_export = df_to_export[df_to_export["Category"] == selected_category]
         search_term = self.filter_frame.search_entry.get()
-        if search_term:
-            df_to_export = df_to_export[
-                df_to_export["Description"].str.contains(
-                    search_term, case=False, na=False
-                )
-            ]
-
+        value_filter = self.filter_frame.value_filter_box.get()
+        df_to_export = self.controller.filter_data(selected_category, search_term, value_filter)
         if df_to_export.empty:
             CTkMessagebox(
                 title="Warning",
@@ -378,7 +333,6 @@ class App(ctk.CTk):
                 icon="warning",
             )
             return
-
         try:
             filepath = filedialog.asksaveasfilename(
                 defaultextension=".xlsx",
@@ -387,7 +341,7 @@ class App(ctk.CTk):
             )
             if not filepath:
                 return
-            df_to_export.to_excel(filepath, index=False)
+            self.controller.export_data(df_to_export, filepath)
             CTkMessagebox(
                 title="Success", message=f"Data successfully exported to:\n{filepath}"
             )

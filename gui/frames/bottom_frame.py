@@ -1,8 +1,12 @@
 # new file: gui/frames/bottom_frame.py
 import customtkinter as ctk
+from config.constants import CATEGORY_SELECT
 
 
 class BottomFrame(ctk.CTkFrame):
+    """
+    Frame for editing and summarizing selected data.
+    """
     def __init__(self, master, controller):
         super().__init__(master)
         self.controller = controller
@@ -19,7 +23,7 @@ class BottomFrame(ctk.CTkFrame):
 
         self.category_edit_box = ctk.CTkComboBox(
             self.control_frame,
-            values=self.controller.categories_for_edit,
+            values=self.controller.get_categories(),
             state="disabled",
         )
         self.category_edit_box.pack(side="left", padx=5)
@@ -65,3 +69,10 @@ class BottomFrame(ctk.CTkFrame):
             self.overall_summary_frame, text="Net: -", font=font_summary
         )
         self.net_label.pack(side="left", padx=10)
+
+    def update_row_category(self):
+        if self.controller.currently_selected_row_index is None:
+            return
+        chosen_category = self.category_edit_box.get()
+        if not chosen_category or chosen_category == CATEGORY_SELECT:
+            return
