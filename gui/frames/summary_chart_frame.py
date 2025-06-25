@@ -1,10 +1,20 @@
 # new file: gui/frames/summary_chart_frame.py
 import customtkinter as ctk
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
+# Configure matplotlib backend for compatibility with frozen executables
+try:
+    import matplotlib
+    matplotlib.use('TkAgg')  # Force TkAgg backend for compatibility
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    print("Warning: matplotlib not available, charts will be disabled")
 
 # Configure Matplotlib style ONCE when the module is imported
-plt.style.use("dark_background")
+if MATPLOTLIB_AVAILABLE:
+    plt.style.use("dark_background")
 
 
 class SummaryChartFrame(ctk.CTkFrame):
@@ -19,17 +29,30 @@ class SummaryChartFrame(ctk.CTkFrame):
         )
         self.title_label.grid(row=0, column=0, pady=10)
 
-        # Create a figure and a subplot with a matching dark background
-        self.figure = plt.Figure(figsize=(5, 4), dpi=100, facecolor="#2B2B2B")
-        self.ax = self.figure.add_subplot(111, facecolor="#2B2B2B")
+        if MATPLOTLIB_AVAILABLE:
+            # Create a figure and a subplot with a matching dark background
+            self.figure = plt.Figure(figsize=(5, 4), dpi=100, facecolor="#2B2B2B")
+            self.ax = self.figure.add_subplot(111, facecolor="#2B2B2B")
 
-        # Create a canvas to embed the chart in our CTk window
-        self.canvas = FigureCanvasTkAgg(self.figure, self)
-        self.canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew")
-        self.update_chart(None)  # Initialize with an empty state
+            # Create a canvas to embed the chart in our CTk window
+            self.canvas = FigureCanvasTkAgg(self.figure, self)
+            self.canvas.get_tk_widget().grid(row=1, column=0, sticky="nsew")
+            self.update_chart(None)  # Initialize with an empty state
+        else:
+            # Fallback when matplotlib is not available
+            self.fallback_label = ctk.CTkLabel(
+                self, 
+                text="Charts not available\n(matplotlib not installed)", 
+                font=ctk.CTkFont(size=12),
+                text_color="gray"
+            )
+            self.fallback_label.grid(row=1, column=0, sticky="nsew")
 
     def update_chart(self, summary_df):
         """Clears the old chart and draws a new one with the provided summary data."""
+        if not MATPLOTLIB_AVAILABLE:
+            return
+            
         self.ax.clear()
 
         if summary_df is None or summary_df.empty:
@@ -63,3 +86,11 @@ class SummaryChartFrame(ctk.CTkFrame):
 
         # Redraw the canvas to show the new chart
         self.canvas.draw()
+
+    def __del__(self):
+        """Cleanup matplotlib resources."""
+        if MATPLOTLIB_AVAILABLE and hasattr(self, 'figure'):
+            try:
+                plt.close(self.figure)
+            except:
+                pass

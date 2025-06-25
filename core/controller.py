@@ -12,6 +12,7 @@ class Controller:
         self.selected_df: Optional[pd.DataFrame] = None
         self.keywords_map = load_keywords()
         self.categories = load_categories()
+        self.currently_selected_row_index = None
 
     def load_data(self, filepath: str) -> None:
         self.df = pd.read_excel(filepath, skiprows=7)
@@ -37,5 +38,21 @@ class Controller:
         self.keywords_map[description] = category
         save_keywords(self.keywords_map)
 
+    def save_keywords_map(self, keywords_map: dict) -> None:
+        """Save the entire keywords map."""
+        self.keywords_map = keywords_map
+        save_keywords(self.keywords_map)
+
     def get_categories(self) -> List[str]:
-        return self.categories 
+        return self.categories
+
+    # These methods will be called from the filter frame but need to delegate to the main app
+    def apply_filters(self, event=None) -> None:
+        """Delegate to main app's apply_filters method."""
+        # This will be overridden by the main app
+        pass
+
+    def clear_filters(self) -> None:
+        """Delegate to main app's clear_filters method."""
+        # This will be overridden by the main app
+        pass 

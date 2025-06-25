@@ -1,12 +1,25 @@
 # file: core/data_processor.py
 import json
+import sys
+import os
 from pathlib import Path
 import pandas as pd
 
-# This creates a path relative to the current file to find the config directory.
-CONFIG_DIR = Path(__file__).parent.parent / "config"
-KEYWORDS_FILE = CONFIG_DIR / "keywords.json"
-CATEGORIES_FILE = CONFIG_DIR / "categories_list.txt"
+def get_config_path():
+    """Get config path that works in both development and frozen executable."""
+    if getattr(sys, 'frozen', False):
+        # Running in a bundle (executable)
+        base_path = sys._MEIPASS
+    else:
+        # Running in development
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    return os.path.join(base_path, 'config')
+
+# This creates a path that works in both development and frozen executable
+CONFIG_DIR = get_config_path()
+KEYWORDS_FILE = os.path.join(CONFIG_DIR, "keywords.json")
+CATEGORIES_FILE = os.path.join(CONFIG_DIR, "categories_list.txt")
 
 
 def load_keywords():

@@ -18,7 +18,7 @@ from .frames.table_frame import TableFrame
 from .frames.bottom_frame import BottomFrame
 from .frames.summary_chart_frame import SummaryChartFrame
 from core.controller import Controller
-from config.constants import APP_TITLE, DEFAULT_GEOMETRY, COLOR_INCOME, COLOR_EXPENSE
+from config.constants import APP_TITLE, DEFAULT_GEOMETRY, COLOR_INCOME, COLOR_EXPENSE, CATEGORY_ALL, CATEGORY_UNCATEGORIZED
 
 
 class App(ctk.CTk):
@@ -28,9 +28,13 @@ class App(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         self.title(APP_TITLE)
-        self.geometry(DEFAULT_GEOMETRY)
+        # Make the app open in fullscreen mode by default
+        self.attributes('-fullscreen', True)  # True fullscreen mode
 
         self.controller = Controller()
+        # Override controller methods to point to main app methods
+        self.controller.apply_filters = self.apply_filters
+        self.controller.clear_filters = self.clear_filters
         self.sort_column: str | None = None
         self.sort_ascending: bool = True
 
@@ -192,6 +196,9 @@ class App(ctk.CTk):
 
         # --- THE FIX YOU SUGGESTED ---
         # Set the default filter value before applying it
+        self.refresh_category_filter()  # Refresh category filter with current categories
+        # Also refresh the bottom frame category edit box
+        self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
         self.filter_frame.category_filter_box.set("All Categories")
         self.apply_filters()  # Now this will use the correct default filter
 
@@ -227,6 +234,8 @@ class App(ctk.CTk):
             self.filter_frame.clear_button.configure(state="normal")
             self.filter_frame.value_filter_box.configure(state="readonly")
         self.filter_frame.search_entry.delete(0, "end")
+        self.refresh_category_filter()  # Refresh category filter with current categories
+        self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
         self.filter_frame.category_filter_box.set("All Categories")
         self.filter_frame.value_filter_box.set("All")
         if self.controller.selected_df is not None:
@@ -256,6 +265,8 @@ class App(ctk.CTk):
             self.controller.currently_selected_row_index = index_type(selected_iid_str)
             item_data = self.controller.selected_df.loc[self.controller.currently_selected_row_index]
             self.bottom_frame.category_edit_box.configure(state="readonly")
+            # Refresh the category edit box with current categories
+            self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
             self.bottom_frame.category_edit_box.set(
                 item_data["Category"] or "Select Category"
             )
@@ -305,7 +316,7 @@ class App(ctk.CTk):
 
     def save_learned_keywords(self) -> None:
         """Save the learned keywords to the config."""
-        self.controller.update_keywords(self.controller.keywords_map)
+        self.controller.save_keywords_map(self.controller.keywords_map)
         CTkMessagebox(
             title="Saved", message="Learned keywords have been saved successfully."
         )
@@ -316,6 +327,8 @@ class App(ctk.CTk):
         self.bottom_frame.delete_button.configure(state="disabled")
         self.bottom_frame.category_edit_box.set("")
         self.bottom_frame.category_edit_box.configure(state="disabled")
+        # Refresh the category edit box with current categories
+        self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
         self.controller.currently_selected_row_index = None
 
     def export_to_excel(self) -> None:
@@ -366,6 +379,13 @@ class App(ctk.CTk):
             CTkMessagebox(title="Success", message=f"Keywords exported to:\n{filepath}")
         except Exception as e:
             CTkMessagebox(title="Error", message=f"Failed to export keywords:\n{e}", icon="cancel")
+
+    def refresh_category_filter(self) -> None:
+        """Refresh the category filter box with current categories."""
+        current_categories = self.controller.get_categories()
+        self.filter_frame.category_filter_box.configure(
+            values=[CATEGORY_ALL, CATEGORY_UNCATEGORIZED] + current_categories
+        )
 
 
 if __name__ == "__main__":

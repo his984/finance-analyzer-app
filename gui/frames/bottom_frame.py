@@ -10,6 +10,7 @@ class BottomFrame(ctk.CTkFrame):
     def __init__(self, master, controller):
         super().__init__(master)
         self.controller = controller
+        self.main_app = master  # Reference to the main app
 
         self.grid_columnconfigure(1, weight=1)
 
@@ -31,7 +32,7 @@ class BottomFrame(ctk.CTkFrame):
         self.update_button = ctk.CTkButton(
             self.control_frame,
             text="Update",
-            command=lambda: self.controller.update_row_category(),
+            command=lambda: self.main_app.update_row_category(),
             state="disabled",
         )
         self.update_button.pack(side="left", padx=5)
@@ -39,7 +40,7 @@ class BottomFrame(ctk.CTkFrame):
         self.delete_button = ctk.CTkButton(
             self.control_frame,
             text="Delete",
-            command=lambda: self.controller.delete_selected_row(),
+            command=lambda: self.main_app.delete_selected_row(),
             state="disabled",
             fg_color="#C0392B",
             hover_color="#E74C3C",
