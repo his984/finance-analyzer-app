@@ -15,6 +15,7 @@ from .frames.top_actions_frame import TopActionsFrame
 from .frames.filter_frame import FilterFrame
 from .frames.table_frame import TableFrame
 from .frames.bottom_frame import BottomFrame
+from .frames.summary_chart_frame import SummaryChartFrame
 
 
 class App(ctk.CTk):
@@ -54,7 +55,7 @@ class App(ctk.CTk):
         self.content_frame.grid_columnconfigure(1, weight=1)
 
         self.table_frame = TableFrame(self.content_frame)
-        self.table_frame.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        self.table_frame.grid(row=0, column=0, rowspan=2, sticky="nsew", padx=(0, 10))
         self.tree = self.table_frame.tree
         self.tree.bind(
             "<<TreeviewSelect>>", lambda event: self.table_row_selected(event)
@@ -63,6 +64,11 @@ class App(ctk.CTk):
         self.summary_panel = TableFrame(self.content_frame)
         self.summary_panel.grid(row=0, column=1, sticky="nsew")
         self.summary_tree = self.summary_panel.tree
+
+        # Add the summary chart frame below the summary panel
+        self.summary_chart_frame = SummaryChartFrame(self.content_frame)
+        self.summary_chart_frame.grid(row=1, column=1, sticky="nsew", pady=(10, 0))
+        self.content_frame.grid_rowconfigure(1, weight=1)
 
         self.bottom_frame = BottomFrame(self, controller=self)
         self.bottom_frame.grid(row=3, column=0, padx=20, pady=(0, 10), sticky="ew")
@@ -135,10 +141,12 @@ class App(ctk.CTk):
         elif value_filter == "Negative":
             df_to_display = df_to_display[pd.to_numeric(df_to_display["Amount"], errors="coerce") < 0]
 
+        summary_df = get_category_summary(df_to_display)
         self.populate_treeview(self.tree, df_to_display, is_interactive=True)
         self.populate_treeview(
-            self.summary_tree, get_category_summary(df_to_display), is_interactive=False
+            self.summary_tree, summary_df, is_interactive=False
         )
+        self.summary_chart_frame.update_chart(summary_df)
         self.calculate_and_display_summaries(df_to_display)
         self.reset_control_panel()
 

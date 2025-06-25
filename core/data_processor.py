@@ -65,7 +65,5 @@ def get_category_summary(dataframe):
     # Sort by amount to see the biggest items first
     summary = summary.sort_values(by="Total", ascending=True)
 
-    # Format the 'Total' column as a string with 2 decimal places and a comma
-    summary["Total"] = summary["Total"].apply(lambda x: f"{x:,.2f}")
-
+    # Do NOT format 'Total' as string here; keep as float for charting
     return summary

@@ -40,20 +40,23 @@ class SummaryChartFrame(ctk.CTkFrame):
             # Prepare colors based on values (positive=green, negative=red)
             colors = ["#27AE60" if x >= 0 else "#C0392B" for x in summary_df["Total"]]
 
-            # Create the horizontal bar chart
-            self.ax.barh(summary_df["Category"], summary_df["Total"], color=colors)
+            # Create the vertical bar chart
+            self.ax.bar(summary_df["Category"], summary_df["Total"], color=colors)
+            self.ax.set_xlabel("Category")
+            self.ax.set_ylabel("Total")
+            self.ax.set_title("Total by Category")
 
             # Style the chart axes and grid for better readability
+            self.ax.tick_params(axis="x", colors="white", labelsize=9, rotation=45)
             self.ax.tick_params(axis="y", colors="white", labelsize=9)
-            self.ax.tick_params(axis="x", colors="white", labelsize=9)
             self.ax.spines["top"].set_visible(False)
             self.ax.spines["right"].set_visible(False)
             self.ax.spines["left"].set_color("gray")
             self.ax.spines["bottom"].set_color("gray")
             self.ax.grid(
-                axis="x", color="gray", linestyle="--", linewidth=0.5, alpha=0.5
+                axis="y", color="gray", linestyle="--", linewidth=0.5, alpha=0.5
             )
-            self.ax.xaxis.set_major_formatter("{x:,.0f}")
+            self.ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:,.0f}"))
 
         # Ensure the layout is tight to prevent labels from being cut off
         self.figure.tight_layout(pad=1.5)
