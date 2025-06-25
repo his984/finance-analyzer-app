@@ -13,7 +13,7 @@ class App(ctk.CTk):
         self.title("Finance Analyzer")
         self.geometry("1400x800")
 
-        # --- Data Storage & State ---
+        # Data Storage & State
         self.df = None
         self.selected_df = None
         self.keywords_map = load_keywords()
@@ -23,7 +23,7 @@ class App(ctk.CTk):
         self.sort_column = None
         self.sort_ascending = True
         
-        # --- WIDGETS ---
+        # UI Structure
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
 
@@ -43,25 +43,33 @@ class App(ctk.CTk):
         # --- UPDATED: Filter & Search Frame ---
         self.filter_frame = ctk.CTkFrame(self)
         self.filter_frame.grid(row=1, column=0, padx=20, pady=0, sticky="ew")
-        self.filter_frame.grid_columnconfigure(3, weight=1) # Allow search entry to expand
-        ctk.CTkLabel(self.filter_frame, text="Filter by Category:").grid(row=0, column=0, padx=(10, 5), pady=10)
-        self.category_filter_box = ctk.CTkComboBox(self.filter_frame, values=self.categories_for_filter, command=self.apply_filters, state="disabled")
-        self.category_filter_box.grid(row=0, column=1, padx=5, pady=10)
-        ctk.CTkLabel(self.filter_frame, text="Search Description:").grid(row=0, column=2, padx=(20, 5), pady=10)
-        self.search_entry = ctk.CTkEntry(self.filter_frame, placeholder_text="Type to search...", state="disabled")
-        self.search_entry.grid(row=0, column=3, padx=5, pady=10, sticky="ew")
-        # Bind the key release event to the apply_filters function
-        self.search_entry.bind("<KeyRelease>", self.apply_filters)
-        # The search button is no longer needed
-        self.clear_button = ctk.CTkButton(self.filter_frame, text="Clear Filters", command=self.clear_filters, state="disabled")
-        self.clear_button.grid(row=0, column=4, padx=(5, 10), pady=10)
+        self.filter_frame.grid_columnconfigure(4, weight=1) # Allow search entry to expand
 
-        # Main Data Table Frame
-        # ... (No changes in this section) ...
+        # NEW: Income/Expense Segmented Button
+        ctk.CTkLabel(self.filter_frame, text="Show:").grid(row=0, column=0, padx=(10, 5), pady=10)
+        self.flow_filter_var = ctk.StringVar(value="All")
+        self.flow_filter_button = ctk.CTkSegmentedButton(self.filter_frame, values=["All", "Income", "Expenses"],
+                                                         command=self.apply_filters, variable=self.flow_filter_var, state="disabled")
+        self.flow_filter_button.grid(row=0, column=1, padx=5, pady=10)
+
+        ctk.CTkLabel(self.filter_frame, text="Category:").grid(row=0, column=2, padx=(20, 5), pady=10)
+        self.category_filter_box = ctk.CTkComboBox(self.filter_frame, values=self.categories_for_filter, command=self.apply_filters, state="disabled")
+        self.category_filter_box.grid(row=0, column=3, padx=5, pady=10)
+        
+        self.search_entry = ctk.CTkEntry(self.filter_frame, placeholder_text="Search Description...", state="disabled")
+        self.search_entry.grid(row=0, column=4, padx=5, pady=10, sticky="ew")
+        self.search_entry.bind("<KeyRelease>", self.apply_filters)
+        
+        self.clear_button = ctk.CTkButton(self.filter_frame, text="Clear Filters", command=self.clear_filters, state="disabled")
+        self.clear_button.grid(row=0, column=5, padx=(5, 10), pady=10)
+
+        # Main Data Table & other frames...
+        # ... (The rest of the __init__ method is the same as before) ...
         self.table_frame = ctk.CTkFrame(self)
         self.table_frame.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
         self.table_frame.grid_rowconfigure(0, weight=1)
         self.table_frame.grid_columnconfigure(0, weight=1)
+        
         style = ttk.Style()
         style.theme_use("default")
         style.configure("Treeview", background="#2a2d2e", foreground="white", fieldbackground="#2a2d2e", borderwidth=0, rowheight=25)
@@ -76,9 +84,8 @@ class App(ctk.CTk):
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.tree.configure(yscrollcommand=scrollbar.set)
         self.tree.bind("<<TreeviewSelect>>", lambda event: self.table_row_selected(event))
-
-        # Bottom Control & Summary Frame
-        # ... (No changes in this section) ...
+        self.populate_treeview(None)
+        
         self.bottom_frame = ctk.CTkFrame(self)
         self.bottom_frame.grid(row=3, column=0, padx=20, pady=10, sticky="ew")
         self.bottom_frame.grid_columnconfigure(1, weight=1)
@@ -101,14 +108,79 @@ class App(ctk.CTk):
         self.net_label = ctk.CTkLabel(self.summary_frame, text="Net: -", font=font_summary)
         self.net_label.pack(side="left", padx=10)
         
-        self.populate_treeview(None)
+    # --- UPDATED: apply_filters method ---
+    def apply_filters(self, event=None):
+        if self.selected_df is None: return
 
-    # --- All methods are the same, no logic changes needed ---
+        df_to_display = self.selected_df
+        
+        # 1. Apply Income/Expense filter FIRST
+        flow_choice = self.flow_filter_var.get()
+        amounts = pd.to_numeric(df_to_display['Amount'], errors='coerce').fillna(0)
+        if flow_choice == "Income":
+            df_to_display = df_to_display[amounts > 0]
+        elif flow_choice == "Expenses":
+            df_to_display = df_to_display[amounts < 0]
+            
+        # 2. Apply category filter
+        selected_category = self.category_filter_box.get()
+        if selected_category == "Uncategorized":
+            df_to_display = df_to_display[df_to_display['Category'] == '']
+        elif selected_category != "All Categories":
+            df_to_display = df_to_display[df_to_display['Category'] == selected_category]
+
+        # 3. Apply search text filter
+        search_term = self.search_entry.get()
+        if search_term:
+            df_to_display = df_to_display[df_to_display['Description'].str.contains(search_term, case=False, na=False)]
+
+        self.populate_treeview(df_to_display)
+        self.calculate_and_display_summaries(df_to_display)
+        self.reset_control_panel()
+
+    # --- UPDATED: clear_filters method ---
+    def clear_filters(self):
+        if self.selected_df is None: return
+        self.search_entry.delete(0, 'end')
+        self.category_filter_box.set("All Categories")
+        self.flow_filter_var.set("All") # Reset the segmented button
+        self.populate_treeview(self.selected_df)
+        self.calculate_and_display_summaries(self.selected_df)
+        self.reset_control_panel()
+
+    # --- UPDATED: analyze_data method ---
+    def analyze_data(self):
+        # ... (same logic, but now enables the new button)
+        if self.selected_df is None: return
+        columns_to_show = ['Accounting date', 'Description', 'Amount', 'Category']
+        self.selected_df['Category'] = ''
+        self.selected_df = self.selected_df.reindex(columns=columns_to_show, fill_value='')
+        for keyword, category in self.keywords_map.items():
+            mask = self.selected_df['Description'].str.contains(keyword, case=False, na=False)
+            self.selected_df.loc[mask, 'Category'] = category
+        
+        self.save_button.configure(state="normal")
+        self.export_button.configure(state="normal")
+        self.flow_filter_button.configure(state="normal") # Enable the new button
+        self.category_filter_box.configure(state="readonly")
+        self.search_entry.configure(state="normal")
+        self.clear_button.configure(state="normal")
+        
+        self.clear_filters()
+        
+        uncategorized_count = self.selected_df['Category'].eq('').sum()
+        if uncategorized_count == 0:
+            CTkMessagebox(title="Analysis Complete", message="All transactions have been successfully categorized!", icon="check")
+        else:
+             CTkMessagebox(title="Analysis Complete", message=f"Automatic categorization is complete. Found {uncategorized_count} items to review.", icon="info")
+
+    # --- All other methods are the same ---
+    # (populate_treeview, calculate_and_display_summaries, load_file, sort_table, etc.)
     def populate_treeview(self, dataframe):
         self.tree.delete(*self.tree.get_children())
         if dataframe is None or dataframe.empty:
             self.tree["columns"] = ("1")
-            self.tree.heading("1", text="No data to display. Please load a file.", anchor="center")
+            self.tree.heading("1", text="No data to display", anchor="center")
             self.tree.column("1", anchor="center")
             return
         self.tree["columns"] = dataframe.columns.tolist()
@@ -131,27 +203,6 @@ class App(ctk.CTk):
         self.income_label.configure(text=f"Income: {total_income:,.2f}")
         self.expense_label.configure(text=f"Expenses: {total_expenses:,.2f}")
         self.net_label.configure(text=f"Net: {net_balance:,.2f}")
-    def apply_filters(self, event=None):
-        if self.selected_df is None: return
-        df_to_display = self.selected_df
-        selected_category = self.category_filter_box.get()
-        if selected_category == "Uncategorized":
-            df_to_display = df_to_display[df_to_display['Category'] == '']
-        elif selected_category != "All Categories":
-            df_to_display = df_to_display[df_to_display['Category'] == selected_category]
-        search_term = self.search_entry.get()
-        if search_term:
-            df_to_display = df_to_display[df_to_display['Description'].str.contains(search_term, case=False, na=False)]
-        self.populate_treeview(df_to_display)
-        self.calculate_and_display_summaries(df_to_display)
-        self.reset_control_panel()
-    def clear_filters(self):
-        if self.selected_df is None: return
-        self.search_entry.delete(0, 'end')
-        self.category_filter_box.set("All Categories")
-        self.populate_treeview(self.selected_df)
-        self.calculate_and_display_summaries(self.selected_df)
-        self.reset_control_panel()
     def load_file(self):
         filepath = filedialog.askopenfilename(filetypes=(("Excel Files", "*.xlsx"),))
         if not filepath: return
@@ -163,31 +214,13 @@ class App(ctk.CTk):
             self.save_button.configure(state="disabled")
             self.export_button.configure(state="disabled")
             self.clear_filters()
+            self.flow_filter_button.configure(state="disabled")
             self.category_filter_box.configure(state="disabled")
             self.search_entry.configure(state="disabled")
             self.clear_button.configure(state="disabled")
             self.calculate_and_display_summaries(None)
         except Exception as e:
             CTkMessagebox(title="Error", message=f"Failed to load file:\n{e}", icon="cancel")
-    def analyze_data(self):
-        if self.selected_df is None: return
-        columns_to_show = ['Accounting date', 'Description', 'Amount', 'Category']
-        self.selected_df['Category'] = ''
-        self.selected_df = self.selected_df.reindex(columns=columns_to_show, fill_value='')
-        for keyword, category in self.keywords_map.items():
-            mask = self.selected_df['Description'].str.contains(keyword, case=False, na=False)
-            self.selected_df.loc[mask, 'Category'] = category
-        self.save_button.configure(state="normal")
-        self.export_button.configure(state="normal")
-        self.category_filter_box.configure(state="readonly")
-        self.search_entry.configure(state="normal")
-        self.clear_button.configure(state="normal")
-        self.clear_filters()
-        uncategorized_count = self.selected_df['Category'].eq('').sum()
-        if uncategorized_count == 0:
-            CTkMessagebox(title="Analysis Complete", message="All transactions have been successfully categorized!", icon="check")
-        else:
-             CTkMessagebox(title="Analysis Complete", message=f"Automatic categorization is complete. Found {uncategorized_count} items to review.", icon="info")
     def sort_table(self, column_name):
         if self.selected_df is None: return
         if self.sort_column == column_name: self.sort_ascending = not self.sort_ascending
