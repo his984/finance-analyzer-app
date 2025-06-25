@@ -41,3 +41,12 @@ class FilterFrame(ctk.CTkFrame):
             state="disabled",
         )
         self.clear_button.grid(row=0, column=4, padx=(5, 10), pady=10)
+
+        self.value_filter_box = ctk.CTkComboBox(
+            self,
+            values=["All", "Positive", "Negative"],
+            command=lambda value: self.controller.apply_filters(),
+            state="readonly",
+        )
+        self.value_filter_box.set("All")
+        self.value_filter_box.grid(row=0, column=5, padx=(5, 10), pady=10)

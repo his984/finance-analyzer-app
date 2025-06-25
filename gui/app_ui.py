@@ -128,6 +128,13 @@ class App(ctk.CTk):
                 )
             ]
 
+        # Value filter logic
+        value_filter = self.filter_frame.value_filter_box.get()
+        if value_filter == "Positive":
+            df_to_display = df_to_display[pd.to_numeric(df_to_display["Amount"], errors="coerce") > 0]
+        elif value_filter == "Negative":
+            df_to_display = df_to_display[pd.to_numeric(df_to_display["Amount"], errors="coerce") < 0]
+
         self.populate_treeview(self.tree, df_to_display, is_interactive=True)
         self.populate_treeview(
             self.summary_tree, get_category_summary(df_to_display), is_interactive=False
@@ -174,6 +181,8 @@ class App(ctk.CTk):
             self.filter_frame.category_filter_box.configure(state="disabled")
             self.filter_frame.search_entry.configure(state="disabled")
             self.filter_frame.clear_button.configure(state="disabled")
+            self.filter_frame.value_filter_box.set("All")
+            self.filter_frame.value_filter_box.configure(state="disabled")
             self.reset_control_panel()
             self.calculate_and_display_summaries(None)
 
@@ -210,6 +219,8 @@ class App(ctk.CTk):
         self.filter_frame.category_filter_box.configure(state="readonly")
         self.filter_frame.search_entry.configure(state="normal")
         self.filter_frame.clear_button.configure(state="normal")
+        self.filter_frame.value_filter_box.set("All")
+        self.filter_frame.value_filter_box.configure(state="readonly")
 
         # --- THE FIX YOU SUGGESTED ---
         # Set the default filter value before applying it
@@ -238,14 +249,17 @@ class App(ctk.CTk):
             self.filter_frame.category_filter_box.configure(state="disabled")
             self.filter_frame.search_entry.configure(state="disabled")
             self.filter_frame.clear_button.configure(state="disabled")
+            self.filter_frame.value_filter_box.configure(state="disabled")
         else:
             self.top_frame.save_button.configure(state="normal")
             self.top_frame.export_button.configure(state="normal")
             self.filter_frame.category_filter_box.configure(state="readonly")
             self.filter_frame.search_entry.configure(state="normal")
             self.filter_frame.clear_button.configure(state="normal")
+            self.filter_frame.value_filter_box.configure(state="readonly")
         self.filter_frame.search_entry.delete(0, "end")
         self.filter_frame.category_filter_box.set("All Categories")
+        self.filter_frame.value_filter_box.set("All")
         if self.selected_df is not None:
             self.apply_filters()
         self.reset_control_panel()

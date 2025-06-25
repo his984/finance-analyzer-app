@@ -4,6 +4,7 @@ Entertainment
 Food & Groceries
 Healthcare
 Housing_Expense
+Income
 Monthly_Bills
 Other
 Personal
