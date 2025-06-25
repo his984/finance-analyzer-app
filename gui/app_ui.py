@@ -99,7 +99,7 @@ class App(ctk.CTk):
 
             # Apply the options using dictionary unpacking
             tree.heading(col, **heading_options)
-            tree.column(col, width=150)
+            tree.column(col, width=150, anchor="center")
 
         # Insert data rows
         for i, (index, row) in enumerate(dataframe.iterrows()):
