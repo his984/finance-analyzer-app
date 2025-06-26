@@ -57,6 +57,21 @@ class TopActionsFrame(ctk.CTkFrame):
         )
         self.export_keywords_button.pack(side="left", padx=(4, 0), pady=10)
 
+        # Exit Fullscreen button
+        self.exit_fullscreen_button = ctk.CTkButton(
+            self.button_row,
+            text="Exit Fullscreen",
+            fg_color="#7f8c8d",
+            hover_color="#95a5a6",
+            text_color="white",
+            command=lambda: master.exit_fullscreen(),
+            height=36,
+            width=160,
+            corner_radius=8,
+            font=ctk.CTkFont(size=14, weight="bold"),
+        )
+        self.exit_fullscreen_button.pack(side="left", padx=(4, 0), pady=10)
+
         # Red close button with 'X' icon at the far right
         self.close_button = ctk.CTkButton(
             self,

@@ -25,12 +25,12 @@ class App(ctk.CTk):
     """
     Main application window for the Finance Analyzer.
     """
+    
     def __init__(self) -> None:
         super().__init__()
         self.title(APP_TITLE)
-        # Make the app open in fullscreen mode by default
-        self.attributes('-fullscreen', True)  # True fullscreen mode
-
+        self.attributes('-fullscreen',True)  # True fullscreen mode
+        # self.state('zoomed')
         self.controller = Controller()
         # Override controller methods to point to main app methods
         self.controller.apply_filters = self.apply_filters
@@ -458,6 +458,9 @@ class App(ctk.CTk):
         self.filter_frame.category_filter_box.configure(
             values=[CATEGORY_ALL, CATEGORY_UNCATEGORIZED] + current_categories
         )
+
+    def exit_fullscreen(self):
+        self.attributes('-fullscreen', False)
 
 
 if __name__ == "__main__":
