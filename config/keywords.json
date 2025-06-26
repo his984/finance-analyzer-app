@@ -1,4 +1,24 @@
 {
-    "LIDL303LUNDAKERL": "Monthly_Bills",
-    "PRIS NYCKELKUND": "Subscription"
+    "Tele2": "Monthly_Bills",
+    "NOVA": "Housing_Expense",
+    "ABDOS MULTIFOOD": "Housing_Expense",
+    "GLIMRA.COM": "Transport",
+    "St1 Lund Bondev{": "Transport",
+    "LIDL303LUNDAKERL": "Subscription",
+    "Parkster / Billo": "Monthly_Bills",
+    "PAYPAL *OPENAI *": "Subscription",
+    "Daily allowance": "Subscription",
+    "Salary": "Income",
+    "FITNESS24": "Subscription",
+    "BOPLATS SYD": "Subscription",
+    "Swish Skånetrafiken": "Transport",
+    "Kommunalarbetarn": "Subscription",
+    "Lunds kommun": "Monthly_Bills",
+    "PRIS NYCKELKUND": "Subscription",
+    "KRAFTRINGEN NÄT": "Monthly_Bills",
+    "PAYPAL *GOOGLE T": "Subscription",
+    "MAXI ICA STORMAR": "Housing_Expense",
+    "STORA COOP LUND": "Housing_Expense",
+    "HSB Skåne brf i": "Monthly_Bills",
+    "Swish Comviq Faktura": "Monthly_Bills"
 }

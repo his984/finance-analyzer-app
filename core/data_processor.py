@@ -75,6 +75,9 @@ def get_category_summary(dataframe):
         categorized_df.groupby("Category").agg(Total=("Amount", "sum")).reset_index()
     )
 
+    # Round the Total column to two decimal places
+    summary["Total"] = summary["Total"].round(2)
+
     # Sort by amount to see the biggest items first
     summary = summary.sort_values(by="Total", ascending=True)
 

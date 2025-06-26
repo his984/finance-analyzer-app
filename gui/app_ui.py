@@ -37,6 +37,7 @@ class App(ctk.CTk):
         self.controller.clear_filters = self.clear_filters
         self.sort_column: str | None = None
         self.sort_ascending: bool = True
+        self.current_displayed_df = None  # Track currently displayed DataFrame
 
         # UI Structure
         self.grid_columnconfigure(0, weight=1)
@@ -119,6 +120,7 @@ class App(ctk.CTk):
         search_term = self.filter_frame.search_entry.get()
         value_filter = self.filter_frame.value_filter_box.get()
         df_to_display = self.controller.filter_data(selected_category, search_term, value_filter)
+        self.current_displayed_df = df_to_display  # Store currently displayed DataFrame
         summary_df = self.controller.get_summary(df_to_display)
         self.populate_treeview(self.tree, df_to_display, is_interactive=True)
         self.populate_treeview(self.summary_tree, summary_df, is_interactive=False)
@@ -141,6 +143,7 @@ class App(ctk.CTk):
 
         try:
             self.controller.load_data(filepath)
+            self.current_displayed_df = self.controller.selected_df  # Initialize current displayed DataFrame
             self.populate_treeview(self.tree, self.controller.selected_df, is_interactive=False)
             self.populate_treeview(self.summary_tree, None)
 
@@ -200,6 +203,7 @@ class App(ctk.CTk):
         # Also refresh the bottom frame category edit box
         self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
         self.filter_frame.category_filter_box.set("All Categories")
+        self.current_displayed_df = self.controller.selected_df  # Initialize current displayed DataFrame
         self.apply_filters()  # Now this will use the correct default filter
 
         # --- Display completion message (Stays the same) ---
@@ -261,9 +265,17 @@ class App(ctk.CTk):
             return
         selected_iid_str = selected_items[0]
         try:
-            index_type = self.controller.selected_df.index.dtype.type
-            self.controller.currently_selected_row_index = index_type(selected_iid_str)
-            item_data = self.controller.selected_df.loc[self.controller.currently_selected_row_index]
+            # Use the currently displayed DataFrame instead of the original
+            if self.current_displayed_df is not None:
+                index_type = self.current_displayed_df.index.dtype.type
+                self.controller.currently_selected_row_index = index_type(selected_iid_str)
+                item_data = self.current_displayed_df.loc[self.controller.currently_selected_row_index]
+            else:
+                # Fallback to original DataFrame if no filtered data
+                index_type = self.controller.selected_df.index.dtype.type
+                self.controller.currently_selected_row_index = index_type(selected_iid_str)
+                item_data = self.controller.selected_df.loc[self.controller.currently_selected_row_index]
+            
             self.bottom_frame.category_edit_box.configure(state="readonly")
             # Refresh the category edit box with current categories
             self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
@@ -283,15 +295,50 @@ class App(ctk.CTk):
         chosen_category = self.bottom_frame.category_edit_box.get()
         if not chosen_category or chosen_category == "Select Category":
             return
-        item_description = self.controller.selected_df.loc[
-            self.controller.currently_selected_row_index, "Description"
-        ]
-        self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Category"] = (
-            chosen_category
-        )
-        self.controller.keywords_map[item_description] = chosen_category
-        self.apply_filters()
-        self.reset_control_panel()
+        
+        try:
+            # Get the correct index for the original DataFrame
+            if self.current_displayed_df is not None:
+                # Find the corresponding index in the original DataFrame
+                # We need to find the row in the original DataFrame that matches the selected row
+                selected_row_data = self.current_displayed_df.loc[self.controller.currently_selected_row_index]
+                
+                # Find the matching row in the original DataFrame
+                # We'll match by all columns to ensure we get the right row
+                mask = True
+                for col in selected_row_data.index:
+                    if col in self.controller.selected_df.columns:
+                        mask = mask & (self.controller.selected_df[col] == selected_row_data[col])
+                
+                # Get the index of the matching row in the original DataFrame
+                matching_indices = self.controller.selected_df[mask].index
+                if len(matching_indices) > 0:
+                    original_index = matching_indices[0]
+                    # Get the item description from the selected row
+                    item_description = selected_row_data["Description"]
+                    # Update the original DataFrame using the correct index
+                    self.controller.selected_df.loc[original_index, "Category"] = chosen_category
+                else:
+                    raise KeyError("Could not find matching row in original DataFrame")
+            else:
+                # If no filtered data, update directly in original DataFrame
+                item_description = self.controller.selected_df.loc[
+                    self.controller.currently_selected_row_index, "Description"
+                ]
+                self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Category"] = (
+                    chosen_category
+                )
+            
+            # Update the keywords map
+            self.controller.keywords_map[item_description] = chosen_category
+            self.apply_filters()
+            self.reset_control_panel()
+            
+        except (KeyError, ValueError) as e:
+            print(f"Error updating row category: {e}")
+            CTkMessagebox(
+                title="Error", message="Could not update the row category.", icon="cancel"
+            )
 
     def delete_selected_row(self) -> None:
         """Delete the selected row from the data."""
@@ -306,10 +353,35 @@ class App(ctk.CTk):
         )
         if msg.get() == "Delete":
             try:
-                self.controller.selected_df.drop(self.controller.currently_selected_row_index, inplace=True)
+                # Get the correct index for the original DataFrame
+                if self.current_displayed_df is not None:
+                    # Find the corresponding index in the original DataFrame
+                    # We need to find the row in the original DataFrame that matches the selected row
+                    selected_row_data = self.current_displayed_df.loc[self.controller.currently_selected_row_index]
+                    
+                    # Find the matching row in the original DataFrame
+                    # We'll match by all columns to ensure we get the right row
+                    mask = True
+                    for col in selected_row_data.index:
+                        if col in self.controller.selected_df.columns:
+                            mask = mask & (self.controller.selected_df[col] == selected_row_data[col])
+                    
+                    # Get the index of the matching row in the original DataFrame
+                    matching_indices = self.controller.selected_df[mask].index
+                    if len(matching_indices) > 0:
+                        original_index = matching_indices[0]
+                        # Delete from the original DataFrame using the correct index
+                        self.controller.selected_df.drop(original_index, inplace=True)
+                    else:
+                        raise KeyError("Could not find matching row in original DataFrame")
+                else:
+                    # If no filtered data, delete directly from original DataFrame
+                    self.controller.selected_df.drop(self.controller.currently_selected_row_index, inplace=True)
+                
                 self.apply_filters()
                 self.reset_control_panel()
-            except KeyError:
+            except (KeyError, ValueError) as e:
+                print(f"Error deleting row: {e}")
                 CTkMessagebox(
                     title="Error", message="Could not delete the row.", icon="cancel"
                 )

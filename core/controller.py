@@ -44,7 +44,7 @@ class Controller:
         save_keywords(self.keywords_map)
 
     def get_categories(self) -> List[str]:
-        return self.categories
+        return self.categories 
 
     # These methods will be called from the filter frame but need to delegate to the main app
     def apply_filters(self, event=None) -> None:
