@@ -60,17 +60,31 @@ class SummaryChartFrame(ctk.CTkFrame):
                 0.5, 0.5, "No data to visualize", ha="center", va="center", color="gray"
             )
         else:
-            # Prepare colors based on values (positive=green, negative=red)
-            colors = ["#27AE60" if x >= 0 else "#C0392B" for x in summary_df["Total"]]
+            # Define a color palette for different categories
+            color_palette = [
+                "#3498DB", "#E74C3C", "#2ECC71", "#F39C12", "#9B59B6", 
+                "#1ABC9C", "#E67E22", "#34495E", "#F1C40F", "#E91E63",
+                "#00BCD4", "#FF5722", "#4CAF50", "#FF9800", "#9C27B0",
+                "#607D8B", "#795548", "#FFEB3B", "#2196F3", "#FFC107"
+            ]
+            
+            # Use absolute values for bar heights
+            bar_heights = summary_df["Total"].abs()
+            
+            # Assign colors to categories (cycle through palette if more categories than colors)
+            colors = [color_palette[i % len(color_palette)] for i in range(len(summary_df))]
 
-            # Create the vertical bar chart
-            self.ax.bar(summary_df["Category"], summary_df["Total"], color=colors)
-            self.ax.set_xlabel("Category")
-            self.ax.set_ylabel("Total")
+            # Create the vertical bar chart with different colors for each category
+            bars = self.ax.bar(range(len(summary_df)), bar_heights, color=colors)
+            self.ax.set_ylabel("Total (Absolute)")
             self.ax.set_title("Total by Category")
 
+            # Remove x-axis labels and ticks since we'll use a legend
+            self.ax.set_xticks([])
+            self.ax.set_xticklabels([])
+            self.ax.set_xlabel("")  # Remove x-axis label
+
             # Style the chart axes and grid for better readability
-            self.ax.tick_params(axis="x", colors="white", labelsize=9, rotation=45)
             self.ax.tick_params(axis="y", colors="white", labelsize=9)
             self.ax.spines["top"].set_visible(False)
             self.ax.spines["right"].set_visible(False)
@@ -81,8 +95,24 @@ class SummaryChartFrame(ctk.CTkFrame):
             )
             self.ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:,.0f}"))
 
+            # Create legend with category names and colors
+            legend_elements = []
+            for i, category in enumerate(summary_df["Category"]):
+                legend_elements.append(plt.Rectangle((0, 0), 1, 1, facecolor=colors[i], label=category))
+            
+            # Add legend below the chart
+            self.ax.legend(
+                handles=legend_elements,
+                loc='upper center',
+                bbox_to_anchor=(0.5, -0.15),
+                ncol=min(3, len(summary_df)),  # Max 3 columns for better layout
+                fontsize=8,
+                frameon=False,
+                labelcolor='white'
+            )
+
         # Ensure the layout is tight to prevent labels from being cut off
-        self.figure.tight_layout(pad=1.5)
+        self.figure.tight_layout(pad=2.0)  # Increased padding for legend
 
         # Redraw the canvas to show the new chart
         self.canvas.draw()

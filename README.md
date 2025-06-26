@@ -7,7 +7,7 @@ A professional desktop application for analyzing and categorizing financial tran
 - **Excel File Import**: Load and process financial data from Excel files
 - **Automatic Categorization**: Smart categorization based on transaction descriptions
 - **Advanced Filtering**: Filter by category, search terms, and transaction values (positive/negative)
-- **Interactive Charts**: Visual representation of category summaries
+- **Interactive Charts**: Visual representation of category summaries with multi-color system
 - **Data Export**: Export processed data to Excel format
 - **Keyword Learning**: Save and reuse categorization rules
 - **Fullscreen Interface**: Modern, responsive UI optimized for data analysis
@@ -86,6 +86,7 @@ finance-analyzer-app/
 │   └── keywords.json      # Categorization rules
 ├── models/                 # Data models
 ├── tests/                  # Test files
+├── docs/                   # Documentation
 ├── requirements.txt        # Python dependencies
 ├── finance_analyzer.spec   # PyInstaller configuration
 └── build_exe.py           # Build automation script
@@ -108,6 +109,16 @@ Housing_Expense
 ### Keywords
 
 The application automatically learns categorization rules and saves them to `config/keywords.json`.
+
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) folder:
+
+- **Bug Fixes & Improvements**: Detailed documentation of all fixes and enhancements
+- **Build Instructions**: Step-by-step guide for creating executables
+- **Feature Documentation**: Complete feature descriptions and usage guides
+
+See [`docs/README.md`](./docs/README.md) for a complete documentation index.
 
 ## Troubleshooting
 
