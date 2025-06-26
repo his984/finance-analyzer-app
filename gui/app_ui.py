@@ -344,9 +344,25 @@ class App(ctk.CTk):
         """Delete the selected row from the data."""
         if self.controller.currently_selected_row_index is None:
             return
+        
+        # Get the description of the selected row for the confirmation message
+        try:
+            if self.current_displayed_df is not None:
+                # Get description from the currently displayed DataFrame
+                selected_row_data = self.current_displayed_df.loc[self.controller.currently_selected_row_index]
+                item_description = selected_row_data["Description"]
+            else:
+                # Get description from the original DataFrame
+                item_description = self.controller.selected_df.loc[
+                    self.controller.currently_selected_row_index, "Description"
+                ]
+        except (KeyError, ValueError) as e:
+            print(f"Error getting row description: {e}")
+            item_description = "Unknown"
+        
         msg = CTkMessagebox(
             title="Confirm Deletion",
-            message=f"Are you sure you want to permanently delete this row?",
+            message=f"Are you sure you want to permanently delete this row?\n\n{item_description}",
             icon="question",
             option_1="Cancel",
             option_2="Delete",
