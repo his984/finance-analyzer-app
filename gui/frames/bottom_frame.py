@@ -29,10 +29,15 @@ class BottomFrame(ctk.CTkFrame):
         )
         self.category_edit_box.pack(side="left", padx=5)
 
+        # --- Amount Edit Entry ---
+        ctk.CTkLabel(self.control_frame, text="Amount:").pack(side="left", padx=(10, 5))
+        self.amount_edit_entry = ctk.CTkEntry(self.control_frame, state="disabled")
+        self.amount_edit_entry.pack(side="left", padx=5)
+
         self.update_button = ctk.CTkButton(
             self.control_frame,
             text="Update",
-            command=lambda: self.main_app.update_row_category(),
+            command=lambda: self.main_app.update_row_data(),
             state="disabled",
         )
         self.update_button.pack(side="left", padx=5)
@@ -70,10 +75,3 @@ class BottomFrame(ctk.CTkFrame):
             self.overall_summary_frame, text="Net: -", font=font_summary
         )
         self.net_label.pack(side="left", padx=10)
-
-    def update_row_category(self):
-        if self.controller.currently_selected_row_index is None:
-            return
-        chosen_category = self.category_edit_box.get()
-        if not chosen_category or chosen_category == CATEGORY_SELECT:
-            return

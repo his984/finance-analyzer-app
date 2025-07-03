@@ -297,18 +297,28 @@ class App(ctk.CTk):
             self.bottom_frame.category_edit_box.set(
                 item_data["Category"] or "Select Category"
             )
+            # Set and enable the amount entry
+            self.bottom_frame.amount_edit_entry.configure(state="normal")
+            self.bottom_frame.amount_edit_entry.delete(0, "end")
+            self.bottom_frame.amount_edit_entry.insert(0, str(item_data["Amount"]))
             self.bottom_frame.update_button.configure(state="normal")
             self.bottom_frame.delete_button.configure(state="normal")
         except (KeyError, ValueError) as e:
             print(f"Error selecting row: {e}")
             self.reset_control_panel()
 
-    def update_row_category(self) -> None:
-        """Update the category of the selected row and learn the description as an exact match."""
+    def update_row_data(self) -> None:
+        """Update the category and amount of the selected row and learn the description as an exact match."""
         if self.controller.currently_selected_row_index is None:
             return
         chosen_category = self.bottom_frame.category_edit_box.get()
+        amount_str = self.bottom_frame.amount_edit_entry.get()
         if not chosen_category or chosen_category == "Select Category":
+            return
+        try:
+            amount = float(amount_str)
+        except ValueError:
+            CTkMessagebox(title="Error", message="Amount must be a valid number.", icon="cancel")
             return
         try:
             if self.current_displayed_df is not None:
@@ -322,6 +332,7 @@ class App(ctk.CTk):
                     original_index = matching_indices[0]
                     item_description = selected_row_data["Description"]
                     self.controller.selected_df.loc[original_index, "Category"] = chosen_category
+                    self.controller.selected_df.loc[original_index, "Amount"] = amount
                 else:
                     raise KeyError("Could not find matching row in original DataFrame")
             else:
@@ -331,6 +342,7 @@ class App(ctk.CTk):
                 self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Category"] = (
                     chosen_category
                 )
+                self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Amount"] = amount
 
             # --- Update the keywords map for the new structure ---
             keywords_map = self.controller.keywords_map
@@ -342,9 +354,9 @@ class App(ctk.CTk):
             self.apply_filters()
             self.reset_control_panel()
         except (KeyError, ValueError) as e:
-            print(f"Error updating row category: {e}")
+            print(f"Error updating row data: {e}")
             CTkMessagebox(
-                title="Error", message="Could not update the row category.", icon="cancel"
+                title="Error", message="Could not update the row.", icon="cancel"
             )
 
     def delete_selected_row(self) -> None:
@@ -422,6 +434,8 @@ class App(ctk.CTk):
         self.bottom_frame.delete_button.configure(state="disabled")
         self.bottom_frame.category_edit_box.set("")
         self.bottom_frame.category_edit_box.configure(state="disabled")
+        self.bottom_frame.amount_edit_entry.delete(0, "end")
+        self.bottom_frame.amount_edit_entry.configure(state="disabled")
         # Refresh the category edit box with current categories
         self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
         self.controller.currently_selected_row_index = None

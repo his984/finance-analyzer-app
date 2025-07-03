@@ -1,7 +1,71 @@
 {
+    "Subscription": {
+        "exact": [
+            "PRIS NYCKELKUND",
+            "FITNESS24",
+            "hallon",
+            "PAYPAL *MICROSOF",
+            "PAYPAL *OPENAI *",
+            "PAYPAL *BITWARDE",
+            "IMMERSIVE TRANSL"
+        ],
+        "contains": []
+    },
+    "Monthly_Bills": {
+        "exact": [
+            "Swish Comviq Faktura",
+            "HSB Sk_ne",
+            "Tele2",
+            "LF MOTOR",
+            "Parkster AB / Bi",
+            "KRAFTRINGEN NÄT",
+            "Lunds kommun",
+            "HSB Skåne brf i",
+            "Transfer by internet",
+            "Kommunalarbetarn"
+        ],
+        "contains": []
+    },
     "Housing_Expense": {
         "exact": [
-            "Lunds kommun"
+            "TEMU.COM",
+            "Swish Coop",
+            "STORA COOP LUND",
+            "WILLYS LUND NORR",
+            "Swish Tradera",
+            "LIDL303LUNDAKERL",
+            "KFC LUND",
+            "LUND CITY MINI M",
+            "COOP MÅRTENSTORG",
+            "Swish MAI"
+        ],
+        "contains": []
+    },
+    "Charity": {
+        "exact": [
+            "Swish payment +46720435081",
+            "WESTERN UNION",
+            "ORANGEY-CO.COM"
+        ],
+        "contains": []
+    },
+    "Income": {
+        "exact": [
+            "Salary",
+            "Unemployment benefit society",
+            "Child allowance"
+        ],
+        "contains": []
+    },
+    "Healthcare": {
+        "exact": [
+            "REGIONSKANE"
+        ],
+        "contains": []
+    },
+    "Transport": {
+        "exact": [
+            "Swish Skånetrafiken"
         ],
         "contains": []
     }
