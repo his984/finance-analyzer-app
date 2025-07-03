@@ -44,8 +44,8 @@
     "Charity": {
         "exact": [
             "Swish payment +46720435081",
-            "WESTERN UNION",
-            "ORANGEY-CO.COM"
+            "ORANGEY-CO.COM",
+            "WESTERN UNION"
         ],
         "contains": []
     },
@@ -53,7 +53,9 @@
         "exact": [
             "Salary",
             "Unemployment benefit society",
-            "Child allowance"
+            "Child allowance",
+            "REGIONSKÅNE+",
+            "Return_Google+"
         ],
         "contains": []
     },
@@ -65,8 +67,13 @@
     },
     "Transport": {
         "exact": [
-            "Swish Skånetrafiken"
+            "Swish Skånetrafiken",
+            "Skånetrafiken"
         ],
+        "contains": []
+    },
+    "Fun&Kids": {
+        "exact": [],
         "contains": []
     }
 }

@@ -34,6 +34,11 @@ class BottomFrame(ctk.CTkFrame):
         self.amount_edit_entry = ctk.CTkEntry(self.control_frame, state="disabled")
         self.amount_edit_entry.pack(side="left", padx=5)
 
+        # --- Description Edit Entry ---
+        ctk.CTkLabel(self.control_frame, text="Description:").pack(side="left", padx=(10, 5))
+        self.description_edit_entry = ctk.CTkEntry(self.control_frame, state="disabled")
+        self.description_edit_entry.pack(side="left", padx=5)
+
         self.update_button = ctk.CTkButton(
             self.control_frame,
             text="Update",

@@ -301,6 +301,10 @@ class App(ctk.CTk):
             self.bottom_frame.amount_edit_entry.configure(state="normal")
             self.bottom_frame.amount_edit_entry.delete(0, "end")
             self.bottom_frame.amount_edit_entry.insert(0, str(item_data["Amount"]))
+            # Set and enable the description entry
+            self.bottom_frame.description_edit_entry.configure(state="normal")
+            self.bottom_frame.description_edit_entry.delete(0, "end")
+            self.bottom_frame.description_edit_entry.insert(0, str(item_data["Description"]))
             self.bottom_frame.update_button.configure(state="normal")
             self.bottom_frame.delete_button.configure(state="normal")
         except (KeyError, ValueError) as e:
@@ -308,12 +312,16 @@ class App(ctk.CTk):
             self.reset_control_panel()
 
     def update_row_data(self) -> None:
-        """Update the category and amount of the selected row and learn the description as an exact match."""
+        """Update the description, category, and amount of the selected row and learn the new description as an exact match."""
         if self.controller.currently_selected_row_index is None:
             return
         chosen_category = self.bottom_frame.category_edit_box.get()
         amount_str = self.bottom_frame.amount_edit_entry.get()
+        new_description = self.bottom_frame.description_edit_entry.get().strip()
         if not chosen_category or chosen_category == "Select Category":
+            return
+        if not new_description:
+            CTkMessagebox(title="Error", message="Description cannot be empty.", icon="cancel")
             return
         try:
             amount = float(amount_str)
@@ -330,26 +338,33 @@ class App(ctk.CTk):
                 matching_indices = self.controller.selected_df[mask].index
                 if len(matching_indices) > 0:
                     original_index = matching_indices[0]
-                    item_description = selected_row_data["Description"]
+                    old_description = selected_row_data["Description"]
                     self.controller.selected_df.loc[original_index, "Category"] = chosen_category
                     self.controller.selected_df.loc[original_index, "Amount"] = amount
+                    self.controller.selected_df.loc[original_index, "Description"] = new_description
                 else:
                     raise KeyError("Could not find matching row in original DataFrame")
             else:
-                item_description = self.controller.selected_df.loc[
+                old_description = self.controller.selected_df.loc[
                     self.controller.currently_selected_row_index, "Description"
                 ]
                 self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Category"] = (
                     chosen_category
                 )
                 self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Amount"] = amount
+                self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Description"] = new_description
 
             # --- Update the keywords map for the new structure ---
             keywords_map = self.controller.keywords_map
+            # Remove old description from all categories' exact lists
+            for cat, rules in keywords_map.items():
+                if "exact" in rules and old_description in rules["exact"]:
+                    rules["exact"].remove(old_description)
+            # Add new description to the chosen category's exact list
             if chosen_category not in keywords_map:
                 keywords_map[chosen_category] = {"exact": [], "contains": []}
-            if item_description not in keywords_map[chosen_category]["exact"]:
-                keywords_map[chosen_category]["exact"].append(item_description)
+            if new_description not in keywords_map[chosen_category]["exact"]:
+                keywords_map[chosen_category]["exact"].append(new_description)
             self.controller.keywords_map = keywords_map
             self.apply_filters()
             self.reset_control_panel()
@@ -436,6 +451,8 @@ class App(ctk.CTk):
         self.bottom_frame.category_edit_box.configure(state="disabled")
         self.bottom_frame.amount_edit_entry.delete(0, "end")
         self.bottom_frame.amount_edit_entry.configure(state="disabled")
+        self.bottom_frame.description_edit_entry.delete(0, "end")
+        self.bottom_frame.description_edit_entry.configure(state="disabled")
         # Refresh the category edit box with current categories
         self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
         self.controller.currently_selected_row_index = None
