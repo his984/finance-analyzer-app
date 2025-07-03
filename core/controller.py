@@ -35,7 +35,11 @@ class Controller:
         return calculate_summaries(df)
 
     def update_keywords(self, description: str, category: str) -> None:
-        self.keywords_map[description] = category
+        # Update the keywords_map to use the new nested structure
+        if category not in self.keywords_map:
+            self.keywords_map[category] = {"exact": [], "contains": []}
+        if description not in self.keywords_map[category]["exact"]:
+            self.keywords_map[category]["exact"].append(description)
         save_keywords(self.keywords_map)
 
     def save_keywords_map(self, keywords_map: dict) -> None:

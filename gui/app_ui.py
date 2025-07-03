@@ -169,21 +169,38 @@ class App(ctk.CTk):
             )
 
     def analyze_data(self) -> None:
-        """Analyze the loaded data and categorize transactions."""
+        """Analyze the loaded data and categorize transactions using two-pass logic (exact, then contains)."""
         if self.controller.selected_df is None:
             return
 
-        # --- Analysis Logic (Stays the same) ---
         columns_to_show = ["Accounting date", "Description", "Amount", "Category"]
         self.controller.selected_df["Category"] = ""
         self.controller.selected_df = self.controller.selected_df.reindex(
             columns=columns_to_show, fill_value=""
         )
-        for keyword, category in self.controller.keywords_map.items():
-            mask = self.controller.selected_df["Description"].str.contains(
-                keyword, case=False, na=False
-            )
-            self.controller.selected_df.loc[mask, "Category"] = category
+        keywords_map = self.controller.keywords_map
+        df = self.controller.selected_df
+
+        # --- Pass 1: Exact Matching ---
+        for category, rules in keywords_map.items():
+            exact_list = rules.get("exact", [])
+            if exact_list:
+                mask = df["Description"].isin(exact_list)
+                df.loc[mask, "Category"] = category
+
+        # --- Pass 2: Contains Matching (only for uncategorized rows) ---
+        uncategorized_mask = df["Category"] == ""
+        for category, rules in keywords_map.items():
+            contains_list = rules.get("contains", [])
+            if contains_list:
+                for keyword in contains_list:
+                    # Only apply to still-uncategorized rows
+                    contains_mask = df.loc[uncategorized_mask, "Description"].str.contains(keyword, case=False, na=False)
+                    # Get the indices in the main DataFrame
+                    indices = df.loc[uncategorized_mask].index[contains_mask]
+                    df.loc[indices, "Category"] = category
+                    # Update uncategorized_mask for next iterations
+                    uncategorized_mask = df["Category"] == ""
 
         # --- Enable Controls ---
         self.tree.bind(
@@ -198,9 +215,7 @@ class App(ctk.CTk):
         self.filter_frame.value_filter_box.configure(state="readonly")
 
         # --- THE FIX YOU SUGGESTED ---
-        # Set the default filter value before applying it
         self.refresh_category_filter()  # Refresh category filter with current categories
-        # Also refresh the bottom frame category edit box
         self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
         self.filter_frame.category_filter_box.set("All Categories")
         self.current_displayed_df = self.controller.selected_df  # Initialize current displayed DataFrame
@@ -289,51 +304,43 @@ class App(ctk.CTk):
             self.reset_control_panel()
 
     def update_row_category(self) -> None:
-        """Update the category of the selected row."""
+        """Update the category of the selected row and learn the description as an exact match."""
         if self.controller.currently_selected_row_index is None:
             return
         chosen_category = self.bottom_frame.category_edit_box.get()
         if not chosen_category or chosen_category == "Select Category":
             return
-        
         try:
-            # Get the correct index for the original DataFrame
             if self.current_displayed_df is not None:
-                # Find the corresponding index in the original DataFrame
-                # We need to find the row in the original DataFrame that matches the selected row
                 selected_row_data = self.current_displayed_df.loc[self.controller.currently_selected_row_index]
-                
-                # Find the matching row in the original DataFrame
-                # We'll match by all columns to ensure we get the right row
                 mask = True
                 for col in selected_row_data.index:
                     if col in self.controller.selected_df.columns:
                         mask = mask & (self.controller.selected_df[col] == selected_row_data[col])
-                
-                # Get the index of the matching row in the original DataFrame
                 matching_indices = self.controller.selected_df[mask].index
                 if len(matching_indices) > 0:
                     original_index = matching_indices[0]
-                    # Get the item description from the selected row
                     item_description = selected_row_data["Description"]
-                    # Update the original DataFrame using the correct index
                     self.controller.selected_df.loc[original_index, "Category"] = chosen_category
                 else:
                     raise KeyError("Could not find matching row in original DataFrame")
             else:
-                # If no filtered data, update directly in original DataFrame
                 item_description = self.controller.selected_df.loc[
                     self.controller.currently_selected_row_index, "Description"
                 ]
                 self.controller.selected_df.loc[self.controller.currently_selected_row_index, "Category"] = (
                     chosen_category
                 )
-            
-            # Update the keywords map
-            self.controller.keywords_map[item_description] = chosen_category
+
+            # --- Update the keywords map for the new structure ---
+            keywords_map = self.controller.keywords_map
+            if chosen_category not in keywords_map:
+                keywords_map[chosen_category] = {"exact": [], "contains": []}
+            if item_description not in keywords_map[chosen_category]["exact"]:
+                keywords_map[chosen_category]["exact"].append(item_description)
+            self.controller.keywords_map = keywords_map
             self.apply_filters()
             self.reset_control_panel()
-            
         except (KeyError, ValueError) as e:
             print(f"Error updating row category: {e}")
             CTkMessagebox(
