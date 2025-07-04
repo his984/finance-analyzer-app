@@ -7,7 +7,9 @@
             "PAYPAL *MICROSOF",
             "PAYPAL *OPENAI *",
             "PAYPAL *BITWARDE",
-            "IMMERSIVE TRANSL"
+            "IMMERSIVE TRANSL",
+            "COMVIQ.SE",
+            "APPLE.COM/BILL"
         ],
         "contains": []
     },
@@ -37,7 +39,23 @@
             "KFC LUND",
             "LUND CITY MINI M",
             "COOP MÅRTENSTORG",
-            "Swish MAI"
+            "Swish MAI",
+            "LIDLMAVERICK",
+            "WH LUND STORTORG",
+            "LIDL163LUNDNORRA",
+            "MAXI ICA STORMAR",
+            "CLEMENS FALAFEL",
+            "NORMAL LUND",
+            "Farfars Livs",
+            "LINDEX LUND NOV",
+            "HM SE0417",
+            "Swish LUNDS BOIS",
+            "ICA KVANTUM MALM",
+            "TGTG k3jmkyn3gj5",
+            "ERIKSHJALPEN LU",
+            "Swish payment +46730275752",
+            "Swish payment +46709495776",
+            "SHEIN.COM"
         ],
         "contains": []
     },
@@ -55,7 +73,10 @@
             "Unemployment benefit society",
             "Child allowance",
             "REGIONSKÅNE+",
-            "Return_Google+"
+            "Return_Google+",
+            "Csn, central student grants committ",
+            "ABDOS MULTIFOOD+",
+            "Daily allowance"
         ],
         "contains": []
     },
@@ -73,6 +94,35 @@
         "contains": []
     },
     "Fun&Kids": {
+        "exact": [
+            "Elgiganten Lund"
+        ],
+        "contains": []
+    },
+    "Temp": {
+        "exact": [
+            "Swish payment +46738952197",
+            "C",
+            "D",
+            "CX",
+            "Bc",
+            "Acasdcasdc+",
+            "Ab",
+            "B",
+            "Aaa",
+            "zz",
+            "Ax"
+        ],
+        "contains": []
+    },
+    "Return+Refund": {
+        "exact": [
+            "ABDOS MULTIFOOD+",
+            "SHEIN+"
+        ],
+        "contains": []
+    },
+    "Tec&Electronics": {
         "exact": [],
         "contains": []
     }

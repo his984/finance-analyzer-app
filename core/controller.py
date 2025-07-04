@@ -29,7 +29,9 @@ class Controller:
         return get_category_summary(df)
 
     def export_data(self, df: pd.DataFrame, filepath: str) -> None:
-        df.to_excel(filepath, index=False)
+        # Export to Excel starting from row 8 (index 7) with header row
+        with pd.ExcelWriter(filepath, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Sheet1', index=False, startrow=7)
 
     def calculate_summaries(self, df: Optional[pd.DataFrame]):
         return calculate_summaries(df)
