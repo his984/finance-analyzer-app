@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Optional, Tuple
 
+
 def filter_dataframe(
     df: Optional[pd.DataFrame],
     category: Optional[str] = None,
@@ -81,4 +82,4 @@ def calculate_summaries(df: Optional[pd.DataFrame]) -> Tuple[float, float, float
     total_income = amounts[amounts > 0].sum()
     total_expenses = amounts[amounts < 0].sum()
     net_balance = amounts.sum()
-    return total_income, total_expenses, net_balance 
+    return total_income, total_expenses, net_balance

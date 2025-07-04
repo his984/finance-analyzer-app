@@ -1,6 +1,5 @@
 # new file: gui/frames/bottom_frame.py
 import customtkinter as ctk
-from config.constants import CATEGORY_SELECT
 
 
 class BottomFrame(ctk.CTkFrame):

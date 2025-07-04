@@ -72,8 +72,6 @@
             "Salary",
             "Unemployment benefit society",
             "Child allowance",
-            "REGIONSKÅNE+",
-            "Return_Google+",
             "Csn, central student grants committ",
             "ABDOS MULTIFOOD+",
             "Daily allowance"
@@ -102,23 +100,18 @@
     "Temp": {
         "exact": [
             "Swish payment +46738952197",
-            "C",
-            "D",
-            "CX",
-            "Bc",
-            "Acasdcasdc+",
-            "Ab",
-            "B",
-            "Aaa",
-            "zz",
-            "Ax"
+            "Swish payment +46762659246",
+            "Swish payment +46704760561"
         ],
         "contains": []
     },
     "Return+Refund": {
         "exact": [
             "ABDOS MULTIFOOD+",
-            "SHEIN+"
+            "SHEIN+",
+            "Return_Google+",
+            "REGIONSKÅNE+",
+            "PAYPAL *GOOGLE G+"
         ],
         "contains": []
     },

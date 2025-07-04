@@ -1,11 +1,16 @@
 # file: gui/frames/top_actions_frame.py
 import customtkinter as ctk
-from tkinter import PhotoImage
+
 
 class TopActionsFrame(ctk.CTkFrame):
+    """
+    Frame containing the top row of action buttons for the Finance Analyzer app.
+    Includes file loading, analysis, saving, exporting, and window controls.
+    """
     def __init__(self, master, controller):
+        """Initialize the top actions frame and all its buttons."""
         super().__init__(master, fg_color="transparent")
-        
+
         self.controller = controller
 
         self.grid_columnconfigure(0, weight=1)
@@ -26,17 +31,17 @@ class TopActionsFrame(ctk.CTkFrame):
             self.button_row, text="Load File", command=lambda: self.controller.load_file(), **button_style
         )
         self.load_button.pack(side="left", padx=(0, 4), pady=10)
-        
+
         self.analyze_button = ctk.CTkButton(
             self.button_row, text="Analyze", command=lambda: self.controller.analyze_data(), state="disabled", **button_style
         )
         self.analyze_button.pack(side="left", padx=4, pady=10)
-        
+
         self.save_button = ctk.CTkButton(
             self.button_row, text="Save Keywords", command=lambda: self.controller.save_learned_keywords(), state="disabled", **button_style
         )
         self.save_button.pack(side="left", padx=4, pady=10)
-        
+
         self.export_button = ctk.CTkButton(
             self.button_row, text="Export Excel", command=lambda: self.controller.export_to_excel(), state="disabled", **button_style
         )

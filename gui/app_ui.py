@@ -1,35 +1,27 @@
 import customtkinter as ctk
-from tkinter import filedialog, ttk
+from tkinter import filedialog
 import pandas as pd
 import json
-import math
 from CTkMessagebox import CTkMessagebox
 
-from core.data_processor import (
-    load_keywords,
-    save_keywords,
-    load_categories,
-    get_category_summary,
-)
-from core.data_utils import filter_dataframe, sort_dataframe, prepare_export, calculate_summaries
 from .frames.top_actions_frame import TopActionsFrame
 from .frames.filter_frame import FilterFrame
 from .frames.table_frame import TableFrame
 from .frames.bottom_frame import BottomFrame
 from .frames.summary_chart_frame import SummaryChartFrame
 from core.controller import Controller
-from config.constants import APP_TITLE, DEFAULT_GEOMETRY, COLOR_INCOME, COLOR_EXPENSE, CATEGORY_ALL, CATEGORY_UNCATEGORIZED
+from config.constants import APP_TITLE, COLOR_INCOME, COLOR_EXPENSE, CATEGORY_ALL, CATEGORY_UNCATEGORIZED
 
 
 class App(ctk.CTk):
     """
     Main application window for the Finance Analyzer.
     """
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.title(APP_TITLE)
-        self.attributes('-fullscreen',True)  # True fullscreen mode
+        self.attributes('-fullscreen', True)  # True fullscreen mode
         # self.state('zoomed')
         self.controller = Controller()
         # Override controller methods to point to main app methods
@@ -290,7 +282,7 @@ class App(ctk.CTk):
                 index_type = self.controller.selected_df.index.dtype.type
                 self.controller.currently_selected_row_index = index_type(selected_iid_str)
                 item_data = self.controller.selected_df.loc[self.controller.currently_selected_row_index]
-            
+
             self.bottom_frame.category_edit_box.configure(state="readonly")
             # Refresh the category edit box with current categories
             self.bottom_frame.category_edit_box.configure(values=self.controller.get_categories())
@@ -378,7 +370,7 @@ class App(ctk.CTk):
         """Delete the selected row from the data."""
         if self.controller.currently_selected_row_index is None:
             return
-        
+
         # Get the description of the selected row for the confirmation message
         try:
             if self.current_displayed_df is not None:
@@ -393,7 +385,7 @@ class App(ctk.CTk):
         except (KeyError, ValueError) as e:
             print(f"Error getting row description: {e}")
             item_description = "Unknown"
-        
+
         msg = CTkMessagebox(
             title="Confirm Deletion",
             message=f"Are you sure you want to permanently delete this row?\n\n{item_description}",
@@ -408,14 +400,14 @@ class App(ctk.CTk):
                     # Find the corresponding index in the original DataFrame
                     # We need to find the row in the original DataFrame that matches the selected row
                     selected_row_data = self.current_displayed_df.loc[self.controller.currently_selected_row_index]
-                    
+
                     # Find the matching row in the original DataFrame
                     # We'll match by all columns to ensure we get the right row
                     mask = True
                     for col in selected_row_data.index:
                         if col in self.controller.selected_df.columns:
                             mask = mask & (self.controller.selected_df[col] == selected_row_data[col])
-                    
+
                     # Get the index of the matching row in the original DataFrame
                     matching_indices = self.controller.selected_df[mask].index
                     if len(matching_indices) > 0:
@@ -427,7 +419,7 @@ class App(ctk.CTk):
                 else:
                     # If no filtered data, delete directly from original DataFrame
                     self.controller.selected_df.drop(self.controller.currently_selected_row_index, inplace=True)
-                
+
                 self.apply_filters()
                 self.reset_control_panel()
             except (KeyError, ValueError) as e:

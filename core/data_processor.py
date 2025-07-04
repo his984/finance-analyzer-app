@@ -2,8 +2,8 @@
 import json
 import sys
 import os
-from pathlib import Path
 import pandas as pd
+
 
 def get_config_path():
     """Get config path that works in both development and frozen executable."""
@@ -13,8 +13,9 @@ def get_config_path():
     else:
         # Running in development
         base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    
+
     return os.path.join(base_path, 'config')
+
 
 # This creates a path that works in both development and frozen executable
 CONFIG_DIR = get_config_path()
@@ -70,7 +71,6 @@ def get_category_summary(dataframe):
         return pd.DataFrame(columns=["Category", "Total"])
 
     # Group by 'Category', sum the 'Amount', and make it a DataFrame again
-    amounts = pd.to_numeric(categorized_df["Amount"], errors="coerce").fillna(0)
     summary = (
         categorized_df.groupby("Category").agg(Total=("Amount", "sum")).reset_index()
     )
